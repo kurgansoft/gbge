@@ -97,17 +97,24 @@ class MainController(hardCodedActions: List[(Action, Option[String])] = List.emp
           else {
             WebSockets.sendTextBlocking(universe.getFrontendUniverseForPlayer(channel._2).serialize(), channel._1)
           }
+        } else {
+          channel._2 match {
+            case Some(id) => println(s"A channel for the player with id $id will soon be closed.")
+            case None => println("A spectator channel will soon be closed.")
+          }
         }
       } catch {
-        case exception: Exception => println("some exception: " + exception)
+        case exception: Exception => println("Something went wrong while notifying a client: " + exception)
       }
     }
 
-    for (channel <- channels) {
-      if (!channel._1.isOpen) {
-        channels = channels.filterNot(_ == channel)
+    channels.foreach(x => {
+      if (!x._1.isOpen) {
+        x._1.close()
       }
-    }
+    })
+
+    channels = channels.filter(_._1.isOpen)
   }
 
   def modifyPortalCoordinates(a: PortalCoordinates): Unit = {
@@ -137,6 +144,7 @@ class MainController(hardCodedActions: List[(Action, Option[String])] = List.emp
             if (channel.isOpen)
               WebSockets.sendTextBlocking(upickle.default.write(payload), channel)
           }
+          portal.clients = portal.clients.filter(_.isOpen)
         }
       }
     }
