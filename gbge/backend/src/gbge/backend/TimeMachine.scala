@@ -29,9 +29,10 @@ case class TimeMachine(
 
   def convertToClientTimeMachine(): ClientTimeMachine = {
     val actionsWithResults = actions.map(_._1).zip(universes.slice(1, universes.size).map(_._2))
-    val preRenderedFUs: List[FrontendUniverse] = changePoints.map(number => frontendUniverses(number)(SpectatorPerspective))
+    val effectiveChangePoints = changePoints.filter(_ <= actions.size)
+    val preRenderedFUs: List[FrontendUniverse] = effectiveChangePoints.map(number => frontendUniverses(number)(SpectatorPerspective))
     val result = ClientTimeMachine(changePoints, actionsWithResults,
-      stateCache = changePoints.map(number => (number, SpectatorPerspective)).zip(preRenderedFUs).toMap
+      stateCache = effectiveChangePoints.map(number => (number, SpectatorPerspective)).zip(preRenderedFUs).toMap
     )
     result
   }
