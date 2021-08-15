@@ -9,3 +9,5 @@ case object Start extends PortalClientEvent
 case class PortalId(id: Int) extends PortalClientEvent
 case class UniversePerspectivePairReceived(perspective: Perspective, frontendUniverse: FrontendUniverse) extends PortalClientEvent
 case class NewStateFromSubCommander(uiState: UIState[_ <: ClientEvent]) extends PortalClientEvent
+case object ActionNeedsToBeSelectedEvent extends PortalClientEvent
+case class PerspectiveNeedsToBeSelectedEvent(selectedAction: Int) extends PortalClientEvent

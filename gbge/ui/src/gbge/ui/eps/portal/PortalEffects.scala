@@ -2,7 +2,7 @@ package gbge.ui.eps.portal
 
 import gbge.client.AbstractCommander
 import gbge.shared.FrontendUniverse
-import gbge.shared.tm.Perspective
+import gbge.shared.tm._
 import gbge.ui.Urls
 import org.scalajs.dom.raw.WebSocket
 import zio.{UIO, ZIO}
@@ -14,9 +14,19 @@ object PortalEffects {
     ZIO.effectTotal {
       val portalSocket = new WebSocket(Urls.portalSocketURLForClients + id.toString)
       portalSocket.onmessage = message => {
-        val (perspective, raw): (Perspective, String) = upickle.default.read[(Perspective, String)](message.data.toString)
-        val newUniverse: FrontendUniverse = FrontendUniverse.decode(raw)
-        commander.addAnEventToTheEventQueue(UniversePerspectivePairReceived(perspective, newUniverse))
+        val payload: PortalMessage = upickle.default.read[PortalMessage](message.data.toString)
+        payload match {
+          case PortalMessageWithPayload(rawFU, perspective) => {
+            val fu = FrontendUniverse.decode(rawFU)
+            commander.addAnEventToTheEventQueue(UniversePerspectivePairReceived(perspective, fu))
+          }
+          case ActionNeedsToBeSelected => {
+            commander.addAnEventToTheEventQueue(ActionNeedsToBeSelectedEvent)
+          }
+          case PerspectiveNeedsToBeSelected(selectedAction) => {
+            commander.addAnEventToTheEventQueue(PerspectiveNeedsToBeSelectedEvent(selectedAction))
+          }
+        }
       }
       List.empty
     }
@@ -33,7 +43,7 @@ object PortalEffects {
         None
       }
       if (portalId.isDefined) {
-        List(PortalId(portalId.get))
+        List(gbge.ui.eps.portal.PortalId(portalId.get))
       } else
         List.empty
     }

@@ -2,7 +2,7 @@ package gbge.backend
 
 import gbge.shared.FrontendUniverse
 import gbge.shared.actions.{Action, GeneralAction, InvalidAction}
-import gbge.shared.tm.{Perspective, PortalCoordinates}
+import gbge.shared.tm._
 import os.RelPath
 import io.undertow.websockets.core._
 import zio.{UIO, ZIO}
@@ -134,20 +134,35 @@ class MainController(hardCodedActions: List[(Action, Option[String])] = List.emp
   def notifyPortal(portal: Portal): Unit = {
     val selectedPerspective = portal.coordinates.flatMap(_.selectedPerspective)
     val actionNumber = portal.coordinates.flatMap(_.actionNumber)
-    if (selectedPerspective.isDefined && actionNumber.isDefined) {
+
+    val payload: PortalMessage = if (actionNumber.isEmpty) {
+      ActionNeedsToBeSelected
+    } else if (actionNumber.isDefined && selectedPerspective.isEmpty) {
+      PerspectiveNeedsToBeSelected(actionNumber.get)
+    } else {
       val fu = Try(timeMachine.getFrontendUniverseForPerspective(actionNumber.get, selectedPerspective.get))
       if (fu.isSuccess && fu.get.isRight) {
         val fu2: FrontendUniverse = fu.get.getOrElse(null)._1
         if (fu2 != null) {
-          val payload: (Perspective, String) = (selectedPerspective.get, fu2.serialize())
-          for (channel <- portal.clients) {
-            if (channel.isOpen)
-              WebSockets.sendTextBlocking(upickle.default.write(payload), channel)
-          }
-          portal.clients = portal.clients.filter(_.isOpen)
+          PortalMessageWithPayload.create(fu2, selectedPerspective.get)
+        } else {
+          MysteriousError0
+        }
+      } else {
+        MysteriousError0
+      }
+    }
+
+    for (channel <- portal.clients) {
+      if (channel.isOpen) {
+        try {
+          WebSockets.sendTextBlocking(upickle.default.write(payload), channel)
+        } catch {
+          case exception: Exception => println("error sending data to client: " + exception)
         }
       }
     }
+    portal.clients = portal.clients.filter(_.isOpen)
   }
 
   def createNewPortal(webSocketChannel: WebSocketChannel, portalId: Option[Int] = None): Int = {
