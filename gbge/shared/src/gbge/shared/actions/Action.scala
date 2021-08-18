@@ -55,6 +55,12 @@ case object CancelGame extends AdminAction
 
 case object Start extends AdminAction
 
+case class DelegateAdminRole(idOfTheNewAdmin: Int) extends AdminAction
+
+object DelegateAdminRole {
+  implicit def rw: RW[DelegateAdminRole] = macroRW
+}
+
 case class KickPlayer(playerId: Int) extends GeneralAction
 
 object KickPlayer {

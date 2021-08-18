@@ -87,6 +87,23 @@ object Screens {
     )
   }
 
+  def delegateAdminRoleScreen(state: ClientState, commander: ClientEventHandler[ClientEvent]) = {
+    div(
+      button(`class`:="btn btn-primary", "<-", onClick --> Callback {
+        commander.addAnEventToTheEventQueue(CHANGE_TO_TAB(3))
+      }),
+      h1(color:="yellow", "Here you can delegate your admin role to another player."),
+      div(display:="flex", flexDirection:="column", alignItems:="center",
+        (for (player <- state.frontendUniverse.get.players.filterNot(_.isAdmin))
+          yield div(
+            button(`class`:="btn btn-primary", player.name, onClick --> Callback {
+              commander.addAnEventToTheEventQueue(DispatchActionWithToken(DelegateAdminRole(player.id)))
+            })(minWidth:="100px"), paddingBottom:="15px"
+          )).toTagMod
+      )
+    )
+  }
+
   def adminScreen(state: ClientState, commander: ClientEventHandler[ClientEvent]) = {
     val gameIsInProgress: Boolean = state.frontendUniverse.get.game.isDefined
     val startStop = if (gameIsInProgress) "QUIT GAME" else "START GAME"
@@ -99,6 +116,9 @@ object Screens {
         }),
         button(`class`:="btn btn-primary", "KICK PLAYER", onClick --> Callback {
           commander.addAnEventToTheEventQueue(CHANGE_TO_TAB(4))
+        }),
+        button(`class`:="btn btn-primary", "DELEGATE ADMIN ROLE", onClick --> Callback {
+          commander.addAnEventToTheEventQueue(CHANGE_TO_TAB(6))
         })
       ),
       br,br,br,

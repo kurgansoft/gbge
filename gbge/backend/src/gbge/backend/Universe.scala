@@ -72,6 +72,23 @@ case class Universe(selectedGame: Option[Int] = None,
         case UnselectGame => reduceUnselectGame()
         case CancelGame => reduceCancel()
         case Start => reduceStart()
+        case DelegateAdminRole(idOfTheNewAdmin) => {
+          if (players.find(_.isAdmin).map(_.id).contains(idOfTheNewAdmin)) {
+            (this, GeneralFailure("You cannot delegate the admin role to yourself, since you are the admin already."))
+          } else if (!players.exists(_.id == idOfTheNewAdmin)) {
+            (this, GeneralFailure(s"There is no player with id #$idOfTheNewAdmin."))
+          } else {
+            (this.copy(players = players.map(player => {
+              if (player.isAdmin) {
+                player.copy(isAdmin = false)
+              } else if (player.id == idOfTheNewAdmin) {
+                player.copy(isAdmin = true)
+              } else {
+                player
+              }
+            })), OK)
+          }
+        }
         case IncreaseProposedNumberOfPlayers | DecreaseProposedNumberOfPlayers => {
           if (game.isEmpty)
             (this, GeneralFailure("There is no game."))

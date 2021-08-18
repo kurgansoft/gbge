@@ -67,16 +67,25 @@ case class ClientState(
   def handleNewFU(fu: FrontendUniverse): (ClientState, ClientResult) = {
     val updatedYou = fu.players.find(_.id == this.you.get.id)
     val updatedYou2 = updatedYou.map(_.copy(token = you.get.token))
+    val adminStatusLost: Boolean = you.exists(_.isAdmin) && updatedYou2.exists(!_.isAdmin)
+    val newTab: Int = tab match {
+      case 3|4|5|6 =>
+        if (adminStatusLost)
+          1
+        else
+          tab
+      case _ => tab
+    }
     if (updatedYou2.isEmpty) {
-      this.copy(frontendUniverse = Some(fu), you = updatedYou2, offlineState = JoinScreenState())
+      this.copy(frontendUniverse = Some(fu), you = updatedYou2, offlineState = JoinScreenState(), tab = newTab)
     } else if (fu.game.isDefined) {
-      val temp = this.copy(you = updatedYou2)
+      val temp = this.copy(you = updatedYou2, tab = newTab)
       gbge.ui.RG.registeredGames(fu.selectedGame.get).handleNewFU(temp, fu)
     }
     else {
       this.offlineState match {
-        case _ : WelcomeScreenState => this.copy(frontendUniverse = Some(fu), you = updatedYou2)
-        case _ => this.copy(frontendUniverse = Some(fu), you = updatedYou2, offlineState = WelcomeScreenState())
+        case _ : WelcomeScreenState => this.copy(frontendUniverse = Some(fu), you = updatedYou2, tab = newTab)
+        case _ => this.copy(frontendUniverse = Some(fu), you = updatedYou2, offlineState = WelcomeScreenState(), tab = newTab)
       }
 
     }

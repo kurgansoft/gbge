@@ -41,6 +41,7 @@ object Displayer {
         case 3 => Screens.adminScreen(state, commander)
         case 4 => Screens.kickScreen(state, commander)
         case 5 => Screens.playerRoleScreen(state, commander)
+        case 6 => Screens.delegateAdminRoleScreen(state, commander)
       }
       div(position:= "absolute", top:= "0px", bottom:= "0px", left:= "0px", right:= "0px", display:="flex", flexDirection:="column",
         Directives.tabMenu(state, commander)(flex:="0 1 auto"),
