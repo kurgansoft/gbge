@@ -9,7 +9,7 @@ object gbge extends Module {
   val ___scalaJSVersion = "1.7.0"
 
   trait CommonPublishModule extends PublishModule {
-    override def publishVersion = "0.0.1"
+    override def publishVersion = "0.1.0"
     override def pomSettings = PomSettings(
       "",
       "com.kurgansoft",
