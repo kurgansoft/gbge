@@ -5,8 +5,8 @@ import mill.scalalib._
 import mill.scalalib.publish._
 
 object gbge extends Module {
-  val ___scalaVersion = "2.13.6"
-  val ___scalaJSVersion = "1.7.0"
+  val ___scalaVersion = "2.13.8"
+  val ___scalaJSVersion = "1.9.0"
 
   trait CommonPublishModule extends PublishModule {
     override def publishVersion = "0.1.0"
@@ -24,7 +24,7 @@ object gbge extends Module {
     trait Common extends ScalaModule {
       override def scalaVersion = ___scalaVersion
       override def ivyDeps = Agg(
-        ivy"com.lihaoyi::upickle::1.4.0",
+        ivy"com.lihaoyi::upickle::1.5.0",
         ivy"dev.zio::zio::1.0.4-2",
         ivy"com.github.julien-truffaut::monocle-core::2.1.0",
         ivy"com.github.julien-truffaut::monocle-macro::2.1.0"
@@ -36,8 +36,8 @@ object gbge extends Module {
 
     object jvm extends ScalaModule with CommonPublishModule with Common {
       object test extends Tests {
-        override def ivyDeps = Agg(ivy"org.scalatest::scalatest:3.2.2")
-        def testFrameworks = Seq("org.scalatest.tools.Framework")
+        override def ivyDeps = Agg(ivy"org.scalatest::scalatest:3.2.9")
+        def testFramework = "org.scalatest.tools.Framework"
       }
     }
 
@@ -53,13 +53,13 @@ object gbge extends Module {
     override def scalaVersion = ___scalaVersion
     override def moduleDeps = Seq(shared.jvm)
     override def ivyDeps = Agg(
-      ivy"com.lihaoyi::cask:0.7.11",
-      ivy"com.lihaoyi::requests:0.6.9",
-      ivy"com.lihaoyi::os-lib:0.7.8"
+      ivy"com.lihaoyi::cask:0.8.0",
+      ivy"com.lihaoyi::requests:0.7.0",
+      ivy"com.lihaoyi::os-lib:0.8.1"
     )
 
     object test extends Tests {
-      override def ivyDeps = Agg(ivy"org.scalatest::scalatest:3.2.2")
+      override def ivyDeps = Agg(ivy"org.scalatest::scalatest:3.2.9")
       def testFrameworks = Seq("org.scalatest.tools.Framework")
     }
   }
@@ -73,15 +73,15 @@ object gbge extends Module {
     override def scalacOptions = Seq("-Xxml:-coalescing")
 
     override def ivyDeps = Agg(
-      ivy"org.scala-js::scalajs-dom::1.1.0",
-      ivy"com.github.japgolly.scalajs-react::core::1.7.7",
-      ivy"com.lihaoyi::pprint::0.6.0"
+      ivy"org.scala-js::scalajs-dom::2.1.0",
+      ivy"com.github.japgolly.scalajs-react::core::2.0.1",
+      ivy"com.lihaoyi::pprint::0.7.1"
     )
 
     object test extends Tests {
       override def ivyDeps = Agg(
-        ivy"org.scalatest::scalatest:3.2.3",
-        ivy"org.scalamock::scalamock:4.4.0"
+        ivy"org.scalatest::scalatest:3.2.9",
+        ivy"org.scalamock::scalamock:5.2.0"
       )
       def testFrameworks = Seq("org.scalatest.tools.Framework")
     }
