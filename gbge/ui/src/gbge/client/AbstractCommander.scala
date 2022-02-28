@@ -13,7 +13,7 @@ trait AbstractCommander[Event <: ClientEvent] extends ClientEventHandler[Event] 
   }
 
   protected def handleEventsFromQueue(): Unit = {
-    implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
+    implicit val ec: scala.concurrent.ExecutionContext = org.scalajs.macrotaskexecutor.MacrotaskExecutor
     if (queue.nonEmpty) {
       val action = queue.head
       queue = queue.tail

@@ -74,6 +74,7 @@ object gbge extends Module {
 
     override def ivyDeps = Agg(
       ivy"org.scala-js::scalajs-dom::2.1.0",
+      ivy"org.scala-js::scala-js-macrotask-executor::1.0.0",
       ivy"com.github.japgolly.scalajs-react::core::2.0.1",
       ivy"com.lihaoyi::pprint::0.7.1"
     )
