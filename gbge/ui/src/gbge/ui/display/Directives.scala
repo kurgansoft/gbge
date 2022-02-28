@@ -4,7 +4,7 @@ import gbge.client.{ClientEvent, ClientEventHandler}
 import gbge.ui.eps.player.{CHANGE_TO_TAB, ClientState}
 import japgolly.scalajs.react.{Callback, ReactEventFrom}
 import japgolly.scalajs.react.vdom.all._
-import org.scalajs.dom.raw.HTMLSelectElement
+import org.scalajs.dom.HTMLSelectElement
 import gbge.ui.state.screenstates.{ChangeGameDropDownIndexEvent, SelectGameEvent}
 
 object Directives {

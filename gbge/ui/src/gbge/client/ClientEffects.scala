@@ -6,7 +6,7 @@ import gbge.ui.eps.player.{NewPlayerEvent, RecoverTokenEvent, RegisterWS, SetupW
 import gbge.ui.state.screenstates.ErrorInput
 import gbge.ui.{TokenRecoverFactory, Urls}
 import org.scalajs.dom.ext.{Ajax, AjaxException}
-import org.scalajs.dom.raw.WebSocket
+import org.scalajs.dom.WebSocket
 import upickle.default.{read, write}
 import zio.{UIO, ZIO}
 
@@ -22,7 +22,7 @@ object ClientEffects {
   }
 
   def getPlayerWithToken(token: String): AbstractCommander[ClientEvent] => UIO[List[ClientEvent]] = _ => {
-    ZIO.fromFuture(ec => Ajax.get(Urls.getPlayerPostFix, headers = Map("token" -> token))).foldM(
+    ZIO.fromFuture(_ => Ajax.get(Urls.getPlayerPostFix, headers = Map("token" -> token))).foldM(
       _ => {
         ZIO.succeed(List.empty)
       },
@@ -43,20 +43,20 @@ object ClientEffects {
       val newUniverse: FrontendUniverse = FrontendUniverse.decode(message.data.toString)
       commander.addAnEventToTheEventQueue(NewFU(newUniverse))
     }
-    stateSocket.onclose = event => {
+    stateSocket.onclose = _ => {
       commander.addAnEventToTheEventQueue(WebsocketConnectionBrokeDown)
     }
     if (token.isDefined)
-      stateSocket.onopen = event => stateSocket.send(token.get)
+      stateSocket.onopen = _ => stateSocket.send(token.get)
     else
-      stateSocket.onopen = event => stateSocket.send("spectator")
+      stateSocket.onopen = _ => stateSocket.send("spectator")
     ZIO.succeed(List(
       RegisterWS(stateSocket)
     ))
   }
 
   def joinWithName(name: String): AbstractCommander[ClientEvent] => UIO[List[ClientEvent]] = _ => {
-    ZIO.fromFuture(ec => Ajax.post(Urls.performActionPostFix, write(Join(name).serialize()))).foldM(
+    ZIO.fromFuture(_ => Ajax.post(Urls.performActionPostFix, write(Join(name).serialize()))).foldM(
       {
         case AjaxException(xhr) => ZIO.succeed(List(ErrorInput(xhr.response.toString)))
         case _ => ZIO.succeed(List.empty)
@@ -75,8 +75,8 @@ object ClientEffects {
 
   def submitRestActionWithToken(action: Action, token: Option[String] = None): AbstractCommander[ClientEvent] => UIO[List[ClientEvent]] = _ => {
     if (token.isDefined) {
-      ZIO.fromFuture(ec => Ajax.post(Urls.performActionPostFix, write(action.serialize()), headers = Map("token" -> token.get))).foldM(
-        error => {
+      ZIO.fromFuture(_ => Ajax.post(Urls.performActionPostFix, write(action.serialize()), headers = Map("token" -> token.get))).foldM(
+        _ => {
           ZIO.succeed(List.empty)
         },
         _ => {

@@ -37,7 +37,7 @@ object gbge extends Module {
     object jvm extends ScalaModule with CommonPublishModule with Common {
       object test extends Tests {
         override def ivyDeps = Agg(ivy"org.scalatest::scalatest:3.2.9")
-        def testFramework = "org.scalatest.tools.Framework"
+        override def testFramework = "org.scalatest.tools.Framework"
       }
     }
 
@@ -60,7 +60,7 @@ object gbge extends Module {
 
     object test extends Tests {
       override def ivyDeps = Agg(ivy"org.scalatest::scalatest:3.2.9")
-      def testFrameworks = Seq("org.scalatest.tools.Framework")
+      override def testFramework = "org.scalatest.tools.Framework"
     }
   }
 
@@ -84,7 +84,7 @@ object gbge extends Module {
         ivy"org.scalatest::scalatest:3.2.9",
         ivy"org.scalamock::scalamock:5.2.0"
       )
-      def testFrameworks = Seq("org.scalatest.tools.Framework")
+      override def testFramework = "org.scalatest.tools.Framework"
     }
   }
 }

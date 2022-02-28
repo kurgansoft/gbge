@@ -15,5 +15,5 @@ object Launcher extends CustomServer {
     assert(a._1.frontendGame == a._2)
   })
 
-  override val jsLocation: Option[String] = Some("out/gbge/ui/fastOpt/dest")
+  override val jsLocation: Option[String] = Some("out/gbge/ui/fastOpt.dest/")
 }
