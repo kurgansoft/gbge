@@ -1,11 +1,10 @@
 package gbge.ui.eps.tm
 
-import gbge.client.AbstractCommander
+import gbge.client.{AbstractCommander, TextDecoder}
 import gbge.shared.{ClientTimeMachine, FrontendUniverse}
 import gbge.shared.tm.{Perspective, PortalCoordinates, TMMessage}
 import gbge.ui.Urls
-import org.scalajs.dom.ext.Ajax
-import org.scalajs.dom.raw.WebSocket
+import org.scalajs.dom.{HttpMethod, RequestInit, WebSocket}
 import upickle.default.write
 import zio.{UIO, ZIO}
 
@@ -13,31 +12,39 @@ import scala.util.Try
 
 object TMEffects {
 
+  val textDecoder = new TextDecoder()
+
   val retrieveTimeMachine: AbstractCommander[TMClientEvent] => UIO[List[TMClientEvent]] = _ => {
-    ZIO.fromFuture(_ => Ajax.get(Urls.tmActionsPostFix)).foldM(
+    ZIO.fromPromiseJS(org.scalajs.dom.fetch(Urls.tmActionsPostFix)).foldM(
       _ => ZIO.succeed(List(
         TimeMachineRetrievalFailed)
       ),
       successValue => {
-        val tmString = upickle.default.read[String](successValue.response.toString)
-        val clientTM: ClientTimeMachine = ClientTimeMachine.decode(tmString)
-        ZIO.succeed(List(
-          TimeMachineHaveArrived(clientTM)
-        ))
+        ZIO.fromPromiseJS(successValue.arrayBuffer()).map(textDecoder.decode)
+          .flatMap(d => {
+            val tmString = upickle.default.read[String](d)
+            val clientTM: ClientTimeMachine = ClientTimeMachine.decode(tmString)
+            ZIO.succeed(List(
+              TimeMachineHaveArrived(clientTM)
+            ))
+          }).orDie
       }
     )
   }
 
   def retrieveTMState(actionNumber: Int, perspective: Perspective): AbstractCommander[TMClientEvent] => UIO[List[TMClientEvent]] = _ => {
-    ZIO.fromFuture(_ => Ajax.get(Urls.tmStatePostFix + actionNumber + "/" + perspective.id)).foldM(
+    ZIO.fromPromiseJS(org.scalajs.dom.fetch(Urls.tmStatePostFix + actionNumber + "/" + perspective.id)).foldM(
       _ => {
         ZIO.succeed(List.empty)
       },
       success => {
-        val fu = FrontendUniverse.decode(success.response.toString)
-        ZIO.succeed(List(
-          TMStateArrived(actionNumber, perspective, fu)
-        ))
+        ZIO.fromPromiseJS(success.arrayBuffer()).map(textDecoder.decode)
+          .flatMap(d => {
+            val fu = FrontendUniverse.decode(d)
+            ZIO.succeed(List(
+              TMStateArrived(actionNumber, perspective, fu)
+            ))
+          }).orDie
       }
     )
   }
@@ -55,9 +62,8 @@ object TMEffects {
         if (id.isSuccess) {
           import gbge.shared.tm.PortalId
           id.get match {
-            case PortalId(id) => {
+            case PortalId(id) =>
               commander.addAnEventToTheEventQueue(TMMessageContainer(PortalId(id)))
-            }
             case _ =>
           }
         }
@@ -67,14 +73,18 @@ object TMEffects {
   }
 
   def resetTmToNumber(number: Int): AbstractCommander[TMClientEvent] => UIO[List[TMClientEvent]] = _ => {
-    ZIO.fromFuture(_ => Ajax.post(Urls.resetTMPostFix + number)).foldM(
+    ZIO.fromPromiseJS(org.scalajs.dom.fetch(Urls.resetTMPostFix + number, new RequestInit {
+      method = HttpMethod.POST
+    })).foldM(
       _ => ZIO.succeed(List.empty),
       _ => ZIO.succeed(List(TmGotShrunk(number)))
     )
   }
 
   val save: AbstractCommander[TMClientEvent] => UIO[List[TMClientEvent]] = _ => {
-    ZIO.fromFuture(_ => Ajax.post(Urls.savePostFix)).foldM(
+    ZIO.fromPromiseJS(org.scalajs.dom.fetch(Urls.savePostFix, new RequestInit {
+      method = HttpMethod.POST
+    })).foldM(
       _ => ZIO.succeed(List.empty),
       _ => ZIO.succeed(List.empty)
     )
@@ -88,7 +98,10 @@ object TMEffects {
   }
 
   def submitPortalCoordinates(coordinates: PortalCoordinates): AbstractCommander[TMClientEvent] => UIO[List[TMClientEvent]] = _ => {
-    ZIO.fromFuture(_ => Ajax.post(Urls.setPortalCoordinatesPostFix, write(coordinates))).foldM(
+    ZIO.fromPromiseJS(org.scalajs.dom.fetch(Urls.setPortalCoordinatesPostFix, new RequestInit {
+     body = write(coordinates)
+     method = HttpMethod.POST
+    })).foldM(
       _ => ZIO.succeed(List.empty),
       _ => ZIO.succeed(List.empty)
     )

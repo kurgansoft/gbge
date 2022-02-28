@@ -5,12 +5,13 @@ import gbge.shared.actions.{Action, Join}
 import gbge.ui.eps.player.{NewPlayerEvent, RecoverTokenEvent, RegisterWS, SetupWSConnection}
 import gbge.ui.state.screenstates.ErrorInput
 import gbge.ui.{TokenRecoverFactory, Urls}
-import org.scalajs.dom.ext.{Ajax, AjaxException}
-import org.scalajs.dom.WebSocket
+import org.scalajs.dom.{Headers, HttpMethod, RequestInit, WebSocket}
 import upickle.default.{read, write}
 import zio.{UIO, ZIO}
 
 object ClientEffects {
+
+  val textDecoder = new TextDecoder()
 
   val recoverTokenEffect: AbstractCommander[ClientEvent] => UIO[List[ClientEvent]] = _ => {
     val token = TokenRecoverFactory.getToken()
@@ -22,17 +23,27 @@ object ClientEffects {
   }
 
   def getPlayerWithToken(token: String): AbstractCommander[ClientEvent] => UIO[List[ClientEvent]] = _ => {
-    ZIO.fromFuture(_ => Ajax.get(Urls.getPlayerPostFix, headers = Map("token" -> token))).foldM(
+    import scala.scalajs._
+    val fetchPromise = org.scalajs.dom.fetch(Urls.getPlayerPostFix, new RequestInit {
+      method = HttpMethod.GET
+      headers = new Headers(js.Array(
+        js.Array("token", token)
+      ))
+    })
+    ZIO.fromPromiseJS(fetchPromise).foldM(
       _ => {
         ZIO.succeed(List.empty)
       },
       success => {
-        val frontendPlayer: FrontendPlayer = read[FrontendPlayer](success.response.toString)
-        val frontendPlayer2 = frontendPlayer.copy(token = Some(token))
-        ZIO.succeed(List(
-          NewPlayerEvent(frontendPlayer2),
-          SetupWSConnection
-        ))
+        val zp = ZIO.fromPromiseJS(success.arrayBuffer()).map(textDecoder.decode)
+        zp.flatMap(decodedPlayer => {
+          val frontendPlayer: FrontendPlayer = read[FrontendPlayer](decodedPlayer)
+          val frontendPlayer2 = frontendPlayer.copy(token = Some(token))
+          ZIO.succeed(List(
+            NewPlayerEvent(frontendPlayer2),
+            SetupWSConnection
+          ))
+        }).orDie
       }
     )
   }
@@ -56,26 +67,42 @@ object ClientEffects {
   }
 
   def joinWithName(name: String): AbstractCommander[ClientEvent] => UIO[List[ClientEvent]] = _ => {
-    ZIO.fromFuture(_ => Ajax.post(Urls.performActionPostFix, write(Join(name).serialize()))).foldM(
-      {
-        case AjaxException(xhr) => ZIO.succeed(List(ErrorInput(xhr.response.toString)))
-        case _ => ZIO.succeed(List.empty)
+    val fetchPromise = org.scalajs.dom.fetch(Urls.performActionPostFix, new RequestInit {
+      method = HttpMethod.POST
+      body = write(Join(name).serialize())
+    })
+    ZIO.fromPromiseJS(fetchPromise).foldM(
+      failure => {
+        ZIO.succeed(List(ErrorInput(failure.getMessage)))
       },
       success => {
-        val frontendPlayer: FrontendPlayer = read[FrontendPlayer](success.response.toString)
-        val token = frontendPlayer.token.get
-        TokenRecoverFactory.saveToken(token)
-        ZIO.succeed(List(
-          NewPlayerEvent(frontendPlayer),
-          SetupWSConnection
-        ))
+        val zp = ZIO.fromPromiseJS(success.arrayBuffer()).map(textDecoder.decode)
+
+        zp.flatMap(decodedPayload => {
+          val frontendPlayer: FrontendPlayer = read[FrontendPlayer](decodedPayload)
+          val token = frontendPlayer.token.get
+          TokenRecoverFactory.saveToken(token)
+          ZIO.succeed(List[ClientEvent](
+            NewPlayerEvent(frontendPlayer),
+            SetupWSConnection
+          ))
+        }).orDie
       }
     )
   }
 
   def submitRestActionWithToken(action: Action, token: Option[String] = None): AbstractCommander[ClientEvent] => UIO[List[ClientEvent]] = _ => {
     if (token.isDefined) {
-      ZIO.fromFuture(_ => Ajax.post(Urls.performActionPostFix, write(action.serialize()), headers = Map("token" -> token.get))).foldM(
+      import scala.scalajs._
+      val fetchPromise = org.scalajs.dom.fetch(Urls.performActionPostFix, new RequestInit {
+        method = HttpMethod.POST
+        body = write(action.serialize())
+        headers = new Headers(js.Array(
+          js.Array("token", token.get)
+        ))
+      })
+
+      ZIO.fromPromiseJS(fetchPromise).foldM(
         _ => {
           ZIO.succeed(List.empty)
         },
