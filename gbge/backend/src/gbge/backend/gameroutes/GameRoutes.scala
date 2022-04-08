@@ -1,6 +1,7 @@
 package gbge.backend.gameroutes
 
 import cask.Response
+import cask.endpoints.staticResources
 import cask.util.Logger
 import gbge.backend.{ExecuteAsyncEffect, ExecuteEffect, FAIL, GeneralFailure, MainController, OK, OKWithMessage, OKWithPlayerPayload, UnauthorizedFailure}
 import gbge.shared.FrontendPlayer
@@ -33,7 +34,7 @@ case class GameRoutes(controller: MainController) extends cask.main.Routes {
     cask.Redirect("/static/timemachine.html")
   }
 
-  @cask.staticResources("/static/")
+  @cask.staticResources("/static/", classOf[staticResources].getClassLoader, Seq("Content-Type" -> "text/html; charset=UTF-8"))
   def staticResourceRoutes() = "gbge/ui"
 
   @cask.post("/api/reset")

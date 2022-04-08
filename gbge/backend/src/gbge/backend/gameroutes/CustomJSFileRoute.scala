@@ -10,7 +10,7 @@ class CustomJSFileRoute(val jsLocation: String) extends cask.main.Routes {
     override def debug(t: Text[Any])(implicit f: File, line: Line): Unit = println("Debug statement in CustomJSFileRoute: " +  t)
   }
 
-  @cask.staticFiles("/js/")
+  @cask.staticFiles("/js/", headers = Seq("Content-Type" -> "text/javascript"))
   def jsRoute() = jsLocation
 
   initialize()
