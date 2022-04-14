@@ -2,10 +2,9 @@ package gbge.client
 
 import gbge.shared.FrontendUniverse
 import gbge.shared.actions.Action
+import uiglue.Event
 
-abstract class ClientEvent
-
-abstract class GeneralEvent extends ClientEvent
+abstract class GeneralEvent extends Event
 
 case class NewFU(fu: FrontendUniverse) extends GeneralEvent
 case object WebsocketConnectionBrokeDown extends GeneralEvent

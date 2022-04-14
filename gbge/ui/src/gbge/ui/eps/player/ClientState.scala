@@ -5,8 +5,12 @@ import gbge.shared.{FrontendPlayer, FrontendUniverse}
 import gbge.ui.UIExport
 import gbge.ui.state.OfflineState
 import gbge.ui.state.screenstates.{JoinScreenState, WelcomeScreenState}
-import org.scalajs.dom.raw.WebSocket
+import org.scalajs.dom.WebSocket
+import uiglue.{Event, EventLoop, UIState}
 import upickle.default.{macroRW, ReadWriter => RW}
+import zio.UIO
+
+import scala.language.implicitConversions
 
 case class ClientState(
                         frontendUniverse: Option[FrontendUniverse] = None,
@@ -14,57 +18,59 @@ case class ClientState(
                         offlineState: OfflineState = JoinScreenState(),
                         tab: Int = 1, // 1 -> general, 2 -> meta, 3-> admin
                         ws: Option[WebSocket] = None
-                      ) extends UIState[PlayerEvent] {
+                      ) extends UIState[Event] {
   val isAdmin: Boolean = you.exists(_.isAdmin)
-
-  implicit def implicitConversion(state: ClientState): (ClientState, ClientResult) = (state, OK)
 
   def getCurrentGame: Option[UIExport] = {
     val selectedGameNumber = frontendUniverse.flatMap(_.selectedGame)
     selectedGameNumber.map(gbge.ui.RG.registeredGames(_))
   }
 
-  override def processClientEvent(event: PlayerEvent): (ClientState, ClientResult)  = {
+  implicit def convert(clientState: ClientState): (ClientState, EventLoop.EventHandler[Event] => UIO[List[Event]]) =
+    (clientState, _ => UIO.succeed(List.empty))
+
+  override def processEvent(event: Event): (ClientState, EventLoop.EventHandler[Event] => UIO[List[Event]]) = {
     event match {
-      case BootstrapPlayerEvent => {
-        (this, ExecuteEffect[ClientEvent](ClientEffects.recoverTokenEffect))
-      }
-      case RecoverTokenEvent(token) => {
-        (this, ExecuteEffect(ClientEffects.getPlayerWithToken(token)))
-      }
-      case sa: ScreenEvent => {
+      case DispatchActionWithToken(action) =>
+        val theToken = you.flatMap(_.token)
+        if (theToken.isDefined) {
+          (this, ClientEffects.submitRestActionWithToken(action, theToken))
+        } else {
+          this
+        }
+      case NewFU(fu) => handleNewFU(fu)
+      case BootstrapPlayerEvent =>
+        (this, ClientEffects.recoverTokenEffect)
+      case RecoverTokenEvent(token) =>
+        (this, ClientEffects.getPlayerWithToken(token))
+      case sa: ScreenEvent =>
         val x = offlineState.handleScreenEvent(sa, frontendUniverse, you)
         (this.copy(offlineState = x._1), x._2)
-      }
-      case NewPlayerEvent(player) => {
+      case NewPlayerEvent(player) =>
         val temp = this.copy(you = Some(player))
         if (temp.offlineState.isInstanceOf[JoinScreenState]) {
           temp.copy(offlineState = WelcomeScreenState())
         } else {
           temp
         }
-      }
-      case SetupWSConnection => {
+      case SetupWSConnection =>
         val token = this.you.flatMap(_.token)
         if (token.isDefined)
-          (this, ExecuteEffect(ClientEffects.createWebSocketConnection(token)))
+          (this, eh => ClientEffects.createWebSocketConnection(token, eh))
         else {
           this
         }
-      }
-      case CHANGE_TO_TAB(tab) => {
+      case CHANGE_TO_TAB(tab) =>
         this.copy(tab = tab)
-      }
-      case RegisterWS(webSocket) => {
+      case RegisterWS(webSocket) =>
         this.copy(ws = Some(webSocket))
-      }
-      case _ => {
+      case _ =>
         this
-      }
     }
   }
 
-  def handleNewFU(fu: FrontendUniverse): (ClientState, ClientResult) = {
+  def handleNewFU(fu: FrontendUniverse): (ClientState, EventLoop.EventHandler[Event] => UIO[List[Event]]) = {
+
     val updatedYou = fu.players.find(_.id == this.you.get.id)
     val updatedYou2 = updatedYou.map(_.copy(token = you.get.token))
     val adminStatusLost: Boolean = you.exists(_.isAdmin) && updatedYou2.exists(!_.isAdmin)

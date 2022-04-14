@@ -1,7 +1,6 @@
 package chat.ui
 
 import chat.shared.ClientChatGame
-import gbge.client.{ClientEvent, ClientEventHandler, ClientResult, OK}
 import gbge.shared.{FrontendPlayer, FrontendUniverse}
 import gbge.ui.UIExport
 import gbge.ui.eps.player.ClientState
@@ -9,16 +8,22 @@ import gbge.ui.eps.spectator.SpectatorState
 import japgolly.scalajs.react.{Callback, ReactEventFromInput}
 import japgolly.scalajs.react.vdom.all._
 import org.scalajs.dom.html.{Div, Input}
+import uiglue.EventLoop.EventHandler
+import uiglue.Event
+import zio.UIO
 
 object ChatUIExport extends UIExport {
 
-  override val handleNewFU: (ClientState, FrontendUniverse) => (ClientState, ClientResult) = (clientState, newFU) => {
+  implicit def convert(clientState: ClientState): (ClientState, EventHandler[Event] => UIO[List[Event]]) =
+    (clientState, _ => UIO.succeed(List.empty))
+
+  override val handleNewFU: (ClientState, FrontendUniverse) => (ClientState, EventHandler[Event] => UIO[List[Event]]) = (clientState, newFU) => {
     if (clientState.offlineState != ChatOfflineState)
-      (clientState.copy(offlineState = ChatOfflineState, frontendUniverse = Some(newFU)), OK)
+      clientState.copy(offlineState = ChatOfflineState, frontendUniverse = Some(newFU))
     else
-      (clientState.copy(frontendUniverse = Some(newFU)), OK)
+      clientState.copy(frontendUniverse = Some(newFU))
   }
-  override val spectatorDisplayer: (SpectatorState, ClientEventHandler[ClientEvent]) => VdomTagOf[Div] = (state, _) => {
+  override val spectatorDisplayer: (SpectatorState, EventHandler[uiglue.Event]) => VdomTagOf[Div] = (state, _) => {
 //    assert(state.frontendUniverse.isDefined)
     val fu = state.frontendUniverse.get
 //    assert(fu.game.isDefined)
@@ -38,11 +43,10 @@ object ChatUIExport extends UIExport {
     )
   }
 
-  override val playerDisplayer: (ClientState, ClientEventHandler[ClientEvent]) => VdomTagOf[Div] = (state, commander) => {
+  override val playerDisplayer: (ClientState, EventHandler[Event]) => VdomTagOf[Div] = (state, eventHandler) => {
     def cb(e: ReactEventFromInput): Callback = Callback {
       val theMessage = e.target.parentElement.childNodes(0).asInstanceOf[Input].value
-      println("content of the input field: " + theMessage + "[inserting into the event queue]")
-      commander.addAnEventToTheEventQueue(SendMessageEvent(theMessage))
+      eventHandler(SendMessageEvent(theMessage))
     }
 
     val yourRole: Option[Int] = state.you.flatMap(_.role)

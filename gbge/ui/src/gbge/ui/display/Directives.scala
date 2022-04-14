@@ -1,11 +1,11 @@
 package gbge.ui.display
 
-import gbge.client.{ClientEvent, ClientEventHandler}
 import gbge.ui.eps.player.{CHANGE_TO_TAB, ClientState}
 import japgolly.scalajs.react.{Callback, ReactEventFrom}
 import japgolly.scalajs.react.vdom.all._
 import org.scalajs.dom.HTMLSelectElement
 import gbge.ui.state.screenstates.{ChangeGameDropDownIndexEvent, SelectGameEvent}
+import uiglue.{Event, EventLoop}
 
 object Directives {
 
@@ -18,24 +18,24 @@ object Directives {
     }
   }
 
-  def gamePicker(games: List[String], si: Int, commander: ClientEventHandler[ClientEvent]) = {
+  def gamePicker(games: List[String], si: Int, eventHandler: EventLoop.EventHandler[Event]) = {
     def selectChangeCB(e: ReactEventFrom[HTMLSelectElement]): Callback = Callback {
       val index = e.target.value.toInt
-      commander.addAnEventToTheEventQueue(ChangeGameDropDownIndexEvent(index))
+      eventHandler(ChangeGameDropDownIndexEvent(index))
     }
     div(
       select(onChange ==> selectChangeCB, defaultValue:= si,
         (for (x <- games.zipWithIndex) yield option(value:= x._2, x._1)).toTagMod),
       br,
       input(`type`:= "button", value:= "CHOOSE", onClick --> Callback {
-        commander.addAnEventToTheEventQueue(SelectGameEvent)
+        eventHandler(SelectGameEvent)
       })
     )
   }
 
-  def tabMenu(state: ClientState, commander: ClientEventHandler[ClientEvent]) = {
+  def tabMenu(state: ClientState, eventHandler: EventLoop.EventHandler[Event]) = {
     def cb(index: Int) = Callback {
-      commander.addAnEventToTheEventQueue(CHANGE_TO_TAB(index))
+      eventHandler(CHANGE_TO_TAB(index))
     }
 
     def td(index: Int) = if ((state.tab ==index) || (index == 3 && state.tab > 3)) "underline" else "none"

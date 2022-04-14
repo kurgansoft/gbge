@@ -1,12 +1,13 @@
 package gbge.ui.display
 
-import gbge.client.{ClientEvent, ClientEventHandler, DispatchActionWithToken}
+import gbge.client.DispatchActionWithToken
 import gbge.shared.{FrontendGame, FrontendPlayer}
 import gbge.shared.actions.{LinkRoleToPlayer, UnlinkPlayerFromRole}
 import japgolly.scalajs.react.Callback
 import japgolly.scalajs.react.vdom.TagOf
 import japgolly.scalajs.react.vdom.all._
 import org.scalajs.dom.html.{Button, Div}
+import uiglue.{Event, EventLoop}
 
 object GeneralDirectives {
 
@@ -24,7 +25,7 @@ object GeneralDirectives {
     )
   }
 
-  def generalRoleChooserScreen(you: FrontendPlayer, players: List[FrontendPlayer], frontendGame: FrontendGame[_], commander: ClientEventHandler[ClientEvent]): TagOf[Div] = {
+  def generalRoleChooserScreen(you: FrontendPlayer, players: List[FrontendPlayer], frontendGame: FrontendGame[_], eventHandler: EventLoop.EventHandler[Event]): TagOf[Div] = {
     val allTheRoles = frontendGame.roles
     val availableRoles = allTheRoles.filterNot(role2 => players.exists(_.role.contains(role2.roleId)))
     div(display:="flex", flexDirection:="column", alignItems:="center", textAlign:="center",
@@ -32,7 +33,7 @@ object GeneralDirectives {
         div(
           br, div("Your role: " + allTheRoles.find(role => you.role.contains(role.roleId)).get), br, br,
           button(`class`:="btn btn-primary", "LEAVE YOUR ROLE", onClick --> Callback {
-            commander.addAnEventToTheEventQueue(DispatchActionWithToken(UnlinkPlayerFromRole(you.id)))
+            eventHandler(DispatchActionWithToken(UnlinkPlayerFromRole(you.id)))
           }),br,br
         )
       } else {
@@ -41,7 +42,7 @@ object GeneralDirectives {
           availableRoles.map(gameRole =>
             div(
               button(`class`:="btn btn-primary", gameRole.toString, onClick --> Callback {
-                commander.addAnEventToTheEventQueue(DispatchActionWithToken(LinkRoleToPlayer(you.id, gameRole.roleId)))
+                eventHandler(DispatchActionWithToken(LinkRoleToPlayer(you.id, gameRole.roleId)))
               }),
               br,br
             )

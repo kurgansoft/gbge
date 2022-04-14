@@ -1,30 +1,29 @@
 package gbge.ui.eps.spectator
 
-import gbge.client.{ClientEvent, ClientEventHandler}
 import gbge.shared.{FrontendPlayer, FrontendUniverse}
 import gbge.ui.display.Directives
 import japgolly.scalajs.react.vdom.TagOf
 import japgolly.scalajs.react.vdom.all._
 import org.scalajs.dom.html.Div
+import uiglue.{Event, EventLoop}
 
 object Screens0 {
 
-  def root(state: SpectatorState, commander: ClientEventHandler[ClientEvent]): TagOf[Div] = {
+  def root(state: SpectatorState, eventHandler: EventLoop.EventHandler[Event]): TagOf[Div] = {
     implicit val players: List[FrontendPlayer] = state.frontendUniverse.map(_.players.toList).orNull
 
     state.wsConnectionStatus match {
       case NOT_YET_ESTABLISHED => div(h1("WS connection is NOT YET ESTABLISHED", color:="yellow"))
       case BROKEN => div(h1("WS connection is BROKEN", color:="yellow"))
-      case CONNECTED => {
+      case CONNECTED =>
         if (state.frontendUniverse.flatMap(_.game).isEmpty) {
           if (state.frontendUniverse.isDefined)
             root1(state.frontendUniverse.get)
           else
             div()
         } else {
-          gbge.ui.RG.registeredGames(state.frontendUniverse.get.selectedGame.get).spectatorDisplayer(state, commander)
+          gbge.ui.RG.registeredGames(state.frontendUniverse.get.selectedGame.get).spectatorDisplayer(state, eventHandler)
         }
-      }
     }
   }
 

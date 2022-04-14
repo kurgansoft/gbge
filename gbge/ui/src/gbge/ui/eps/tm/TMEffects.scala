@@ -1,10 +1,11 @@
 package gbge.ui.eps.tm
 
-import gbge.client.{AbstractCommander, TextDecoder}
+import gbge.client.TextDecoder
 import gbge.shared.{ClientTimeMachine, FrontendUniverse}
 import gbge.shared.tm.{Perspective, PortalCoordinates, TMMessage}
 import gbge.ui.Urls
 import org.scalajs.dom.{HttpMethod, RequestInit, WebSocket}
+import uiglue.EventLoop.EventHandler
 import upickle.default.write
 import zio.{UIO, ZIO}
 
@@ -14,7 +15,7 @@ object TMEffects {
 
   val textDecoder = new TextDecoder()
 
-  val retrieveTimeMachine: AbstractCommander[TMClientEvent] => UIO[List[TMClientEvent]] = _ => {
+  val retrieveTimeMachine: UIO[List[TMClientEvent]] = {
     ZIO.fromPromiseJS(org.scalajs.dom.fetch(Urls.tmActionsPostFix)).foldM(
       _ => ZIO.succeed(List(
         TimeMachineRetrievalFailed)
@@ -32,7 +33,7 @@ object TMEffects {
     )
   }
 
-  def retrieveTMState(actionNumber: Int, perspective: Perspective): AbstractCommander[TMClientEvent] => UIO[List[TMClientEvent]] = _ => {
+  def retrieveTMState(actionNumber: Int, perspective: Perspective): UIO[List[TMClientEvent]] = {
     ZIO.fromPromiseJS(org.scalajs.dom.fetch(Urls.tmStatePostFix + actionNumber + "/" + perspective.id)).foldM(
       _ => {
         ZIO.succeed(List.empty)
@@ -49,7 +50,7 @@ object TMEffects {
     )
   }
 
-  def createOrReusePortal(portalId: Option[Int] = None): AbstractCommander[TMClientEvent] => UIO[List[TMClientEvent]] = commander => {
+  def createOrReusePortal(portalId: Option[Int] = None): EventHandler[TMClientEvent] => UIO[List[TMClientEvent]] = eventHandler => {
     ZIO.effectTotal {
       val url = if (portalId.isDefined) {
         Urls.portalSocketURL + "/" + portalId.get
@@ -63,7 +64,7 @@ object TMEffects {
           import gbge.shared.tm.PortalId
           id.get match {
             case PortalId(id) =>
-              commander.addAnEventToTheEventQueue(TMMessageContainer(PortalId(id)))
+              eventHandler(TMMessageContainer(PortalId(id)))
             case _ =>
           }
         }
@@ -72,7 +73,7 @@ object TMEffects {
     }
   }
 
-  def resetTmToNumber(number: Int): AbstractCommander[TMClientEvent] => UIO[List[TMClientEvent]] = _ => {
+  def resetTmToNumber(number: Int): UIO[List[TMClientEvent]] = {
     ZIO.fromPromiseJS(org.scalajs.dom.fetch(Urls.resetTMPostFix + number, new RequestInit {
       method = HttpMethod.POST
     })).foldM(
@@ -81,7 +82,7 @@ object TMEffects {
     )
   }
 
-  val save: AbstractCommander[TMClientEvent] => UIO[List[TMClientEvent]] = _ => {
+  val save: UIO[List[TMClientEvent]] = {
     ZIO.fromPromiseJS(org.scalajs.dom.fetch(Urls.savePostFix, new RequestInit {
       method = HttpMethod.POST
     })).foldM(
@@ -90,14 +91,14 @@ object TMEffects {
     )
   }
 
-  def persistToHash(string: String): AbstractCommander[TMClientEvent] => UIO[List[TMClientEvent]] = _ => {
+  def persistToHash(string: String): UIO[List[TMClientEvent]] = {
     ZIO.effectTotal {
       org.scalajs.dom.window.location.hash = string
       List.empty
     }
   }
 
-  def submitPortalCoordinates(coordinates: PortalCoordinates): AbstractCommander[TMClientEvent] => UIO[List[TMClientEvent]] = _ => {
+  def submitPortalCoordinates(coordinates: PortalCoordinates): UIO[List[TMClientEvent]] = {
     ZIO.fromPromiseJS(org.scalajs.dom.fetch(Urls.setPortalCoordinatesPostFix, new RequestInit {
      body = write(coordinates)
      method = HttpMethod.POST
@@ -107,24 +108,24 @@ object TMEffects {
     )
   }
 
-  def persistToHashAndSubmitPortalCoordinates(tmState: TimeMachineState): AbstractCommander[TMClientEvent] => UIO[List[TMClientEvent]] = commander => {
+  def persistToHashAndSubmitPortalCoordinates(tmState: TimeMachineState): UIO[List[TMClientEvent]] = {
     if (tmState.portalId.isEmpty) {
-      persistToHash(tmState.stringToPersist)(commander)
+      persistToHash(tmState.stringToPersist)
     } else {
-      val first = persistToHash(tmState.stringToPersist)(commander)
-      val second = submitPortalCoordinates(tmState.getPortalCoordinates)(commander)
+      val first = persistToHash(tmState.stringToPersist)
+      val second = submitPortalCoordinates(tmState.getPortalCoordinates)
       second *> first
     }
   }
 
-  val recoverFromHash: AbstractCommander[TMClientEvent] => UIO[List[TMClientEvent]] = _ => {
+  val recoverFromHash: UIO[List[TMClientEvent]] = {
     ZIO.effectTotal {
       val theHash = org.scalajs.dom.window.location.hash
       List(RecoveredHash(theHash))
     }
   }
 
-  def justReturnAnEvent(event: TMClientEvent): AbstractCommander[TMClientEvent] => UIO[List[TMClientEvent]] = _ => {
+  def justReturnAnEvent(event: TMClientEvent): UIO[List[TMClientEvent]] = {
     ZIO.succeed(List(event))
   }
 

@@ -1,37 +1,93 @@
 package gbge.ui
 
-import gbge.ui.eps.player.{Commander, StandardStateWrapper}
-import gbge.ui.eps.portal.{PortalCommander, PortalState}
-import gbge.ui.eps.spectator.{SpectatorCommander, SpectatorState}
-import gbge.ui.eps.tm.{TMCommander, TimeMachineState}
+import gbge.ui.eps.player.{BootstrapPlayerEvent, ClientState, SetupWSConnection}
+import gbge.ui.eps.portal.{PortalClientEvent, PortalState}
+import gbge.ui.eps.spectator.SpectatorState
+import gbge.ui.eps.tm.{TMClientEvent, TimeMachineState}
 import org.scalajs.dom.html.Div
+import uiglue.EventLoop.EventHandler
+import uiglue.{Event, EventLoop, UIState}
 
+import scala.concurrent.Future
 import scala.scalajs.js.annotation.JSExport
 
 class EntryPoint {
 
+  implicit val ec: scala.concurrent.ExecutionContext = org.scalajs.macrotaskexecutor.MacrotaskExecutor
+
   @JSExport
   def spectatorEntryPoint(div: Div): Unit = {
     val state = SpectatorState()
-    val commander = new SpectatorCommander(div, state)
+
+    val renderFunction: (UIState[Event], EventHandler[Event]) => Unit =
+      (state, eventHandler) => {
+        val s = state.asInstanceOf[SpectatorState]
+        gbge.ui.display.Displayer
+          .spectatorRootComponent(s, eventHandler)
+          .renderIntoDOM(div)
+      }
+
+    val loop = EventLoop.createLoop(state, renderFunction, List(SetupWSConnection))
+
+    Future {
+      zio.Runtime.default.unsafeRun(loop)
+    }
   }
 
   @JSExport
   def playerEntryPoint(div: Div): Unit = {
-    val state = StandardStateWrapper()
-    val commander = new Commander(div, state)
+    val state = ClientState()
+
+    val renderFunction: (UIState[Event], EventHandler[Event]) => Unit =
+      (state, eventHandler) => {
+        val s = state.asInstanceOf[ClientState]
+        gbge.ui.display.Displayer
+          .rootComponent(s, eventHandler)
+          .renderIntoDOM(div)
+      }
+
+    val loop = EventLoop.createLoop(state, renderFunction, List(BootstrapPlayerEvent))
+
+    Future {
+      zio.Runtime.default.unsafeRun(loop)
+    }
+
   }
 
   @JSExport
   def timeMachineEntryPoint(div: Div): Unit = {
     val state = TimeMachineState()
-    val commander = TMCommander(div, state)
+    val renderFunction: (UIState[TMClientEvent], EventHandler[TMClientEvent]) => Unit =
+      (state, eventHandler) => {
+        val s = state.asInstanceOf[TimeMachineState]
+        gbge.ui.eps.tm.Displayer
+          .tmComponent(s, eventHandler)
+          .renderIntoDOM(div)
+      }
+
+    val loop = EventLoop.createLoop(state, renderFunction, List(gbge.ui.eps.tm.Start))
+
+    Future {
+      zio.Runtime.default.unsafeRun(loop)
+    }
   }
 
   @JSExport
   def portalEntryPoint(div: Div): Unit = {
     val state = PortalState()
-    val commander = PortalCommander(div, state)
+    val renderFunction: (UIState[PortalClientEvent], EventHandler[PortalClientEvent]) => Unit =
+      (state, eventHandler) => {
+        val s = state.asInstanceOf[PortalState]
+        gbge.ui.eps.portal.Displayer
+          .portalComponent(s, eventHandler)
+          .renderIntoDOM(div)
+      }
+
+    val loop = EventLoop.createLoop(state, renderFunction, List(gbge.ui.eps.portal.Start))
+
+    Future {
+      zio.Runtime.default.unsafeRun(loop)
+    }
   }
 
 }

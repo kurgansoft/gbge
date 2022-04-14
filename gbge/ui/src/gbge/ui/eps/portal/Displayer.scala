@@ -3,13 +3,23 @@ package gbge.ui.eps.portal
 import gbge.ui.eps.player.ClientState
 import gbge.ui.eps.spectator.{Screens0, SpectatorState}
 import japgolly.scalajs.react.vdom.all._
-import japgolly.scalajs.react.{Callback, ScalaComponent}
+import japgolly.scalajs.react.ScalaComponent
+import uiglue.{Event, EventLoop}
 
 object Displayer {
-  val portalComponent = ScalaComponent.builder[(PortalState, PortalCommander)]("PortalComponent").
+  val portalComponent = ScalaComponent.builder[(PortalState, EventLoop.EventHandler[PortalClientEvent])]("PortalComponent").
     render_P(t => {
       val portalState = t._1
-      val commander = t._2
+      val eventHandler = t._2
+
+      val spectatorBridge: EventLoop.EventHandler[Event] = event => {
+        eventHandler(EventFromSubState(event))
+      }
+
+      val playerBridge: EventLoop.EventHandler[Event] = event => {
+        eventHandler(EventFromSubState(event))
+      }
+
       portalState.generalPortalClientState match {
         case ActionIsNotSelected | PerspectiveIsNotSelected | WaitingForInfo | MysteriousError =>
           div(color:="yellow",
@@ -19,10 +29,10 @@ object Displayer {
         case EverythingIsSelected => {
           portalState.clientState match {
             case Some(SpectatorState(frontendUniverse, wsConnectionStatus, offlineState, _)) =>
-              Screens0.root(SpectatorState(frontendUniverse, wsConnectionStatus, offlineState), commander.createPortalSubCommander())
+              Screens0.root(SpectatorState(frontendUniverse, wsConnectionStatus, offlineState), spectatorBridge)
             case Some(ClientState(frontendUniverse, you, offlineState, tab, _)) =>
               gbge.ui.display.Displayer.rootComponent(
-                (ClientState(frontendUniverse, you, offlineState, tab), commander.createPortalSubCommander())
+                (ClientState(frontendUniverse, you, offlineState, tab), playerBridge)
               ).vdomElement
           case _ =>
             div(color:="yellow",
@@ -31,21 +41,18 @@ object Displayer {
         }
       }
       portalState.clientState match {
-        case Some(SpectatorState(frontendUniverse, wsConnectionStatus, offlineState, _)) => {
-          Screens0.root(SpectatorState(frontendUniverse, wsConnectionStatus, offlineState), commander.createPortalSubCommander())
-        }
-        case Some(ClientState(frontendUniverse, you, offlineState, tab, _)) => {
+        case Some(SpectatorState(frontendUniverse, wsConnectionStatus, offlineState, _)) =>
+          Screens0.root(SpectatorState(frontendUniverse, wsConnectionStatus, offlineState), spectatorBridge)
+        case Some(ClientState(frontendUniverse, you, offlineState, tab, _)) =>
           gbge.ui.display.Displayer.rootComponent(
-            (ClientState(frontendUniverse, you, offlineState, tab), commander.createPortalSubCommander())
+            (ClientState(frontendUniverse, you, offlineState, tab), playerBridge)
           ).vdomElement
-        }
-        case _ => {
+        case _ =>
           div(color:="yellow",
             h1("Portal component"),
             div("portal id is: " + portalState.portalId),
           )
-        }
       }
-    }
-  }).build
+      }
+    }).build
 }

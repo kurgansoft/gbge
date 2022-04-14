@@ -1,38 +1,35 @@
 package gbge.ui.eps.portal
 
-import gbge.client.AbstractCommander
 import gbge.shared.FrontendUniverse
 import gbge.shared.tm._
 import gbge.ui.Urls
-import org.scalajs.dom.raw.WebSocket
+import org.scalajs.dom.WebSocket
+import uiglue.EventLoop.EventHandler
 import zio.{UIO, ZIO}
 
 import scala.util.Try
 
 object PortalEffects {
-  def setUpPortalWSConnection(id: Int): AbstractCommander[PortalClientEvent] => UIO[List[PortalClientEvent]] = commander => {
+  def setUpPortalWSConnection(id: Int): EventHandler[PortalClientEvent] => UIO[List[PortalClientEvent]] = eventHandler => {
     ZIO.effectTotal {
       val portalSocket = new WebSocket(Urls.portalSocketURLForClients + id.toString)
       portalSocket.onmessage = message => {
         val payload: PortalMessage = upickle.default.read[PortalMessage](message.data.toString)
         payload match {
-          case PortalMessageWithPayload(rawFU, perspective) => {
+          case PortalMessageWithPayload(rawFU, perspective) =>
             val fu = FrontendUniverse.decode(rawFU)
-            commander.addAnEventToTheEventQueue(UniversePerspectivePairReceived(perspective, fu))
-          }
-          case ActionNeedsToBeSelected => {
-            commander.addAnEventToTheEventQueue(ActionNeedsToBeSelectedEvent)
-          }
-          case PerspectiveNeedsToBeSelected(selectedAction) => {
-            commander.addAnEventToTheEventQueue(PerspectiveNeedsToBeSelectedEvent(selectedAction))
-          }
+            eventHandler(UniversePerspectivePairReceived(perspective, fu))
+          case ActionNeedsToBeSelected =>
+            eventHandler(ActionNeedsToBeSelectedEvent)
+          case PerspectiveNeedsToBeSelected(selectedAction) =>
+            eventHandler(PerspectiveNeedsToBeSelectedEvent(selectedAction))
         }
       }
       List.empty
     }
   }
 
-  val retrievePortalIdFromHash: AbstractCommander[PortalClientEvent] => UIO[List[PortalClientEvent]] = _ => {
+  val retrievePortalIdFromHash: UIO[List[PortalClientEvent]] = {
     ZIO.effectTotal {
       val hash: String = org.scalajs.dom.window.location.hash
       val portalId: Option[Int] = if (hash.length > 1) {

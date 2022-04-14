@@ -1,5 +1,6 @@
+import coursier.{MavenRepository, Repository}
 import mill._
-import mill.define.Sources
+import mill.define.{Sources, Task}
 import mill.scalajslib.ScalaJSModule
 import mill.scalalib._
 import mill.scalalib.publish._
@@ -22,10 +23,11 @@ object gbge extends Module {
 
   object shared extends Module {
     trait Common extends ScalaModule {
+
       override def scalaVersion = ___scalaVersion
       override def ivyDeps = Agg(
         ivy"com.lihaoyi::upickle::1.5.0",
-        ivy"dev.zio::zio::1.0.4-2",
+        ivy"dev.zio::zio::1.0.13",
         ivy"com.github.julien-truffaut::monocle-core::2.1.0",
         ivy"com.github.julien-truffaut::monocle-macro::2.1.0"
       )
@@ -72,11 +74,18 @@ object gbge extends Module {
 
     override def scalacOptions = Seq("-Xxml:-coalescing")
 
+    override def repositoriesTask: Task[Seq[Repository]] = T.task {
+      super.repositoriesTask() ++ Seq(
+        MavenRepository("https://jitpack.io")
+      )
+    }
+
     override def ivyDeps = Agg(
       ivy"org.scala-js::scalajs-dom::2.1.0",
       ivy"org.scala-js::scala-js-macrotask-executor::1.0.0",
       ivy"com.github.japgolly.scalajs-react::core::2.0.1",
-      ivy"com.lihaoyi::pprint::0.7.1"
+      ivy"com.lihaoyi::pprint::0.7.1",
+      ivy"com.github.kurgansoft:uiglue:eb56dbde6d"
     )
 
     object test extends Tests {

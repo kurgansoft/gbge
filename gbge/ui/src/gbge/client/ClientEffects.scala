@@ -2,10 +2,11 @@ package gbge.client
 
 import gbge.shared.{FrontendPlayer, FrontendUniverse}
 import gbge.shared.actions.{Action, Join}
-import gbge.ui.eps.player.{NewPlayerEvent, RecoverTokenEvent, RegisterWS, SetupWSConnection}
+import gbge.ui.eps.player.{NewPlayerEvent, PlayerEvent, RecoverTokenEvent, RegisterWS, SetupWSConnection}
 import gbge.ui.state.screenstates.ErrorInput
 import gbge.ui.{TokenRecoverFactory, Urls}
 import org.scalajs.dom.{Headers, HttpMethod, RequestInit, WebSocket}
+import uiglue.EventLoop
 import upickle.default.{read, write}
 import zio.{UIO, ZIO}
 
@@ -13,7 +14,7 @@ object ClientEffects {
 
   val textDecoder = new TextDecoder()
 
-  val recoverTokenEffect: AbstractCommander[ClientEvent] => UIO[List[ClientEvent]] = _ => {
+  val recoverTokenEffect: UIO[List[PlayerEvent]] = {
     val token = TokenRecoverFactory.getToken()
     if (token.isDefined) {
       ZIO.succeed(List(RecoverTokenEvent(token.get)))
@@ -22,7 +23,7 @@ object ClientEffects {
     }
   }
 
-  def getPlayerWithToken(token: String): AbstractCommander[ClientEvent] => UIO[List[ClientEvent]] = _ => {
+  def getPlayerWithToken(token: String): UIO[List[PlayerEvent]] = {
     import scala.scalajs._
     val fetchPromise = org.scalajs.dom.fetch(Urls.getPlayerPostFix, new RequestInit {
       method = HttpMethod.GET
@@ -48,14 +49,14 @@ object ClientEffects {
     )
   }
 
-  def createWebSocketConnection(token: Option[String]): AbstractCommander[ClientEvent] => UIO[List[ClientEvent]] = commander  => {
+  def createWebSocketConnection(token: Option[String], eventHandler: EventLoop.EventHandler[GeneralEvent]): UIO[List[RegisterWS]] = {
     val stateSocket = new WebSocket(Urls.stateSocketURL)
     stateSocket.onmessage = message => {
       val newUniverse: FrontendUniverse = FrontendUniverse.decode(message.data.toString)
-      commander.addAnEventToTheEventQueue(NewFU(newUniverse))
+      eventHandler(NewFU(newUniverse))
     }
     stateSocket.onclose = _ => {
-      commander.addAnEventToTheEventQueue(WebsocketConnectionBrokeDown)
+      eventHandler(WebsocketConnectionBrokeDown)
     }
     if (token.isDefined)
       stateSocket.onopen = _ => stateSocket.send(token.get)
@@ -66,7 +67,7 @@ object ClientEffects {
     ))
   }
 
-  def joinWithName(name: String): AbstractCommander[ClientEvent] => UIO[List[ClientEvent]] = _ => {
+  def joinWithName(name: String): UIO[List[PlayerEvent]] = {
     val fetchPromise = org.scalajs.dom.fetch(Urls.performActionPostFix, new RequestInit {
       method = HttpMethod.POST
       body = write(Join(name).serialize())
@@ -82,7 +83,7 @@ object ClientEffects {
           val frontendPlayer: FrontendPlayer = read[FrontendPlayer](decodedPayload)
           val token = frontendPlayer.token.get
           TokenRecoverFactory.saveToken(token)
-          ZIO.succeed(List[ClientEvent](
+          ZIO.succeed(List(
             NewPlayerEvent(frontendPlayer),
             SetupWSConnection
           ))
@@ -91,7 +92,7 @@ object ClientEffects {
     )
   }
 
-  def submitRestActionWithToken(action: Action, token: Option[String] = None): AbstractCommander[ClientEvent] => UIO[List[ClientEvent]] = _ => {
+  def submitRestActionWithToken(action: Action, token: Option[String] = None): UIO[List[Nothing]] = {
     if (token.isDefined) {
       import scala.scalajs._
       val fetchPromise = org.scalajs.dom.fetch(Urls.performActionPostFix, new RequestInit {

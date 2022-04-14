@@ -1,12 +1,13 @@
 package gbge.ui.display
 
-import gbge.client.{ClientEvent, ClientEventHandler, DispatchActionWithToken}
+import gbge.client.DispatchActionWithToken
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.all._
 import gbge.shared.actions._
 import gbge.shared.FrontendPlayer
 import gbge.ui.eps.player.{CHANGE_TO_TAB, ClientState}
 import gbge.ui.state.screenstates._
+import uiglue.{Event, EventLoop}
 
 object Screens {
 
@@ -18,12 +19,12 @@ object Screens {
     }
   }
 
-  def joinScreen(state: ClientState, commander: ClientEventHandler[ClientEvent]) = {
+  def joinScreen(state: ClientState, eventHandler: EventLoop.EventHandler[Event]) = {
     assert(state.offlineState.isInstanceOf[JoinScreenState])
     val jss = state.offlineState.asInstanceOf[JoinScreenState]
 
     def fieldContentChangedCallback(e: ReactEventFromInput): Callback = Callback {
-        commander.addAnEventToTheEventQueue(NameInput(e.target.value))
+        eventHandler(NameInput(e.target.value))
     }
 
     val nameInput = input(`type`:= "text", maxLength:= 20, fontSize := "50", onChange ==> fieldContentChangedCallback)
@@ -32,79 +33,79 @@ object Screens {
       br,h1(color:="yellow", "Please enter your (nick)name!"),br,
       nameInput,br,
       button(`class`:="btn btn-primary", "Join", onClick --> Callback {
-        commander.addAnEventToTheEventQueue(SubmitName)
+        eventHandler(SubmitName)
       })(sbd(!jss.submitEnabled)),br,
       if (jss.errorMessage.isDefined) {
         div(position:= "relative", width:= "330px", backgroundColor:="red", jss.errorMessage.get,
-          div(position:= "absolute", top:="3px", right:="3px", "X", onClick --> Callback{commander.addAnEventToTheEventQueue(DismissErrorMessage)})
+          div(position:= "absolute", top:="3px", right:="3px", "X", onClick --> Callback{eventHandler(DismissErrorMessage)})
         )
       } else div()
     )
   }
 
-  def metaScreen(state: ClientState, commander: ClientEventHandler[ClientEvent]) = {
+  def metaScreen(state: ClientState, eventHandler: EventLoop.EventHandler[Event]) = {
     lazy val roleButton = button(`class`:="btn btn-primary", "ROLES", onClick --> Callback {
-      commander.addAnEventToTheEventQueue(CHANGE_TO_TAB(5))
+      eventHandler(CHANGE_TO_TAB(5))
     })
     div(color:="yellow", display:="flex", flexDirection:="column", alignItems:="center", overflowY:="auto",
       h1("META SCREEN"),
       button(`class`:="btn btn-primary", "Log out", onClick --> Callback {
-        commander.addAnEventToTheEventQueue(DispatchActionWithToken(KickPlayer(state.you.get.id)))
+        eventHandler(DispatchActionWithToken(KickPlayer(state.you.get.id)))
       }),br,
       Option.when(state.frontendUniverse.flatMap(_.game).isDefined)(div(roleButton, br)),
       h1("Game specific settings/actions:"),br,
       Option.when(state.getCurrentGame.isDefined)
-      (state.getCurrentGame.get.metaExtension(state, commander))
+      (state.getCurrentGame.get.metaExtension(state, eventHandler))
     )
   }
 
-  def playerRoleScreen(state: ClientState, commander: ClientEventHandler[ClientEvent]) = {
+  def playerRoleScreen(state: ClientState, eventHandler: EventLoop.EventHandler[Event]) = {
     val you = state.you.get
     val players: List[FrontendPlayer] = state.frontendUniverse.map(_.players).get
     val game = state.frontendUniverse.get.game.get
     div(color:="yellow",
       button(`class`:="btn btn-primary", "<-", onClick --> Callback {
-        commander.addAnEventToTheEventQueue(CHANGE_TO_TAB(2))
+        eventHandler(CHANGE_TO_TAB(2))
       }),
       h1(color:="yellow", "PLAYER ROLE SCREEN", textAlign:="center"),
-      GeneralDirectives.generalRoleChooserScreen(you, players, game, commander)
+      GeneralDirectives.generalRoleChooserScreen(you, players, game, eventHandler)
     )
   }
 
-  def kickScreen(state: ClientState, commander: ClientEventHandler[ClientEvent]) = {
+  def kickScreen(state: ClientState, eventHandler: EventLoop.EventHandler[Event]) = {
     div(
       button(`class`:="btn btn-primary", "<-", onClick --> Callback {
-        commander.addAnEventToTheEventQueue(CHANGE_TO_TAB(3))
+        eventHandler(CHANGE_TO_TAB(3))
       }),
       div(display:="flex", flexDirection:="column", alignItems:="center",
         (for (player <- state.frontendUniverse.get.players.filterNot(_.isAdmin))
           yield div(
             button(`class`:="btn btn-primary", player.name, onClick --> Callback {
-              commander.addAnEventToTheEventQueue(DispatchActionWithToken(KickPlayer(player.id)))
+              eventHandler(DispatchActionWithToken(KickPlayer(player.id)))
             })(minWidth:="100px"), paddingBottom:="15px"
           )).toTagMod
       )
     )
   }
 
-  def delegateAdminRoleScreen(state: ClientState, commander: ClientEventHandler[ClientEvent]) = {
+  def delegateAdminRoleScreen(state: ClientState, eventHandler: EventLoop.EventHandler[Event]) = {
     div(
       button(`class`:="btn btn-primary", "<-", onClick --> Callback {
-        commander.addAnEventToTheEventQueue(CHANGE_TO_TAB(3))
+        eventHandler(CHANGE_TO_TAB(3))
       }),
       h1(color:="yellow", "Here you can delegate your admin role to another player."),
       div(display:="flex", flexDirection:="column", alignItems:="center",
         (for (player <- state.frontendUniverse.get.players.filterNot(_.isAdmin))
           yield div(
             button(`class`:="btn btn-primary", player.name, onClick --> Callback {
-              commander.addAnEventToTheEventQueue(DispatchActionWithToken(DelegateAdminRole(player.id)))
+              eventHandler(DispatchActionWithToken(DelegateAdminRole(player.id)))
             })(minWidth:="100px"), paddingBottom:="15px"
           )).toTagMod
       )
     )
   }
 
-  def adminScreen(state: ClientState, commander: ClientEventHandler[ClientEvent]) = {
+  def adminScreen(state: ClientState, eventHandler: EventLoop.EventHandler[Event]) = {
     val gameIsInProgress: Boolean = state.frontendUniverse.get.game.isDefined
     val startStop = if (gameIsInProgress) "QUIT GAME" else "START GAME"
     div(color:="yellow", display:="flex", flexDirection:="column", alignItems:="center",
@@ -112,32 +113,32 @@ object Screens {
       GeneralDirectives.buttonStack(
         button(`class`:="btn btn-primary", startStop, onClick --> Callback {
           if (gameIsInProgress)
-            commander.addAnEventToTheEventQueue(DispatchActionWithToken(CancelGame))
+            eventHandler(DispatchActionWithToken(CancelGame))
         }),
         button(`class`:="btn btn-primary", "KICK PLAYER", onClick --> Callback {
-          commander.addAnEventToTheEventQueue(CHANGE_TO_TAB(4))
+          eventHandler(CHANGE_TO_TAB(4))
         }),
         button(`class`:="btn btn-primary", "DELEGATE ADMIN ROLE", onClick --> Callback {
-          commander.addAnEventToTheEventQueue(CHANGE_TO_TAB(6))
+          eventHandler(CHANGE_TO_TAB(6))
         })
       ),
       br,br,br,
-      state.getCurrentGame.map(_.adminDisplayer(state, commander))
+      state.getCurrentGame.map(_.adminDisplayer(state, eventHandler))
     )
   }
 
-  def welcomeScreen(state: ClientState, commander: ClientEventHandler[ClientEvent]) = {
+  def welcomeScreen(state: ClientState, eventHandler: EventLoop.EventHandler[Event]) = {
     assert(state.frontendUniverse.isDefined)
     assert(state.offlineState.isInstanceOf[WelcomeScreenState])
     assert(state.you.isDefined)
     val welcomeScreenState: WelcomeScreenState = state.offlineState.asInstanceOf[WelcomeScreenState]
 
     val revert = Callback {
-      commander.addAnEventToTheEventQueue(DispatchActionWithToken(UnselectGame))
+      eventHandler(DispatchActionWithToken(UnselectGame))
     }
 
     val start = Callback {
-      commander.addAnEventToTheEventQueue(DispatchActionWithToken(Start))
+      eventHandler(DispatchActionWithToken(Start))
     }
 
     val sg = state.frontendUniverse.get.selectedGame
@@ -152,7 +153,7 @@ object Screens {
         div(display:= "flex", flexDirection:= "row", justifyContent:= "space-evenly", alignItems:="center",
           div(
             if (sg.isEmpty)
-              Directives.gamePicker(games, welcomeScreenState.index, commander)
+              Directives.gamePicker(games, welcomeScreenState.index, eventHandler)
             else {
               Directives.selectedGame(sg)
             }
