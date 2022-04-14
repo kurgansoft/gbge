@@ -27,7 +27,7 @@ object gbge extends Module {
       override def scalaVersion = ___scalaVersion
       override def ivyDeps = Agg(
         ivy"com.lihaoyi::upickle::1.5.0",
-        ivy"dev.zio::zio::1.0.13",
+        ivy"dev.zio::zio::1.0.14",
         ivy"com.github.julien-truffaut::monocle-core::2.1.0",
         ivy"com.github.julien-truffaut::monocle-macro::2.1.0"
       )
