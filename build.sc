@@ -7,7 +7,7 @@ import mill.scalalib.publish._
 
 object gbge extends Module {
   val ___scalaVersion = "2.13.8"
-  val ___scalaJSVersion = "1.9.0"
+  val ___scalaJSVersion = "1.10.0"
 
   trait CommonPublishModule extends PublishModule {
     override def publishVersion = "0.1.0"
@@ -85,7 +85,7 @@ object gbge extends Module {
       ivy"org.scala-js::scala-js-macrotask-executor::1.0.0",
       ivy"com.github.japgolly.scalajs-react::core::2.0.1",
       ivy"com.lihaoyi::pprint::0.7.1",
-      ivy"com.github.kurgansoft:uiglue:eb56dbde6d"
+      ivy"com.github.kurgansoft:uiglue:a4a79524b0"
     )
 
     object test extends Tests {
