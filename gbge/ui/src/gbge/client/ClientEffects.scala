@@ -32,9 +32,7 @@ object ClientEffects {
       ))
     })
     ZIO.fromPromiseJS(fetchPromise).foldM(
-      _ => {
-        ZIO.succeed(List.empty)
-      },
+      _ => ZIO.succeed(List.empty),
       success => {
         val zp = ZIO.fromPromiseJS(success.arrayBuffer()).map(textDecoder.decode)
         zp.flatMap(decodedPlayer => {
@@ -73,20 +71,21 @@ object ClientEffects {
       body = write(Join(name).serialize())
     })
     ZIO.fromPromiseJS(fetchPromise).foldM(
-      failure => {
-        ZIO.succeed(List(ErrorInput(failure.getMessage)))
-      },
+      _ => ZIO.succeed(List.empty),
       success => {
         val zp = ZIO.fromPromiseJS(success.arrayBuffer()).map(textDecoder.decode)
-
         zp.flatMap(decodedPayload => {
-          val frontendPlayer: FrontendPlayer = read[FrontendPlayer](decodedPayload)
-          val token = frontendPlayer.token.get
-          TokenRecoverFactory.saveToken(token)
-          ZIO.succeed(List(
-            NewPlayerEvent(frontendPlayer),
-            SetupWSConnection
-          ))
+          if (success.ok) {
+            val frontendPlayer: FrontendPlayer = read[FrontendPlayer](decodedPayload)
+            val token = frontendPlayer.token.get
+            TokenRecoverFactory.saveToken(token)
+            ZIO.succeed(List(
+              NewPlayerEvent(frontendPlayer),
+              SetupWSConnection
+            ))
+          } else {
+            ZIO.succeed(List(ErrorInput(decodedPayload)))
+          }
         }).orDie
       }
     )
@@ -104,12 +103,8 @@ object ClientEffects {
       })
 
       ZIO.fromPromiseJS(fetchPromise).foldM(
-        _ => {
-          ZIO.succeed(List.empty)
-        },
-        _ => {
-          ZIO.succeed(List.empty)
-        }
+        _ => ZIO.succeed(List.empty),
+        _ => ZIO.succeed(List.empty)
       )
     } else {
       ZIO.succeed(List.empty)
