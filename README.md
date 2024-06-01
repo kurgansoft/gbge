@@ -2,29 +2,6 @@
 
  Opinionated Scala/ScalaJs library to rapidly adapt traditional board games to digital devices.
  
- ## How to modify this project in IntelliJ?
- 
-  * Install [mill](https://com-lihaoyi.github.io/mill/mill/Intro_to_Mill.html#_installation)  
-  * Run this command in the terminal:
-  ```mill mill.scalalib.GenIdea/idea```
-  * Now you can open the project in IntelliJ
- 
- ## How to publish this library to your local ivy cache?
- 
- In order to use this library you have to publish it to your local ivy repo, so you can fetch it in your projects.
- Eventually it will be released to maven central, so this step will be unnecessary, but right now it has to be done.
- 
- * Install [mill](https://com-lihaoyi.github.io/mill/mill/Intro_to_Mill.html#_installation)  
- * Check out this repo
- * Navigate to the root folder of the checked out repo in your terminal
- * Issue these commands: 
- ```
-mill gbge.shared.js.publishLocal;
-mill gbge.shared.jvm.publishLocal;
-mill gbge.backend.publishLocal;
-mill gbge.ui.publishLocal;
-```
- 
  ## How to create your own game? 
  
 * In the shared module: 
