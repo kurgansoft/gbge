@@ -13,7 +13,7 @@ object Directives {
     if (selectedGame.isEmpty) {
       div("No game is selected just yet.")
     } else {
-      val str = gbge.shared.RG.registeredGames(selectedGame.get).name
+      val str = gbge.ui.RG.registeredGames(selectedGame.get).name
       div(border:="2px solid black", marginLeft:="10%", marginRight:="10%", str)
     }
   }
@@ -43,7 +43,10 @@ object Directives {
     div(display:="flex", flexDirection:= "row", justifyContent:= "space-evenly", color:= "white",
       div("Game", onClick --> cb(1), textDecoration:= td(1)),
       div("Meta", onClick --> cb(2), textDecoration:= td(2)),
-      state.you.find(_.isAdmin).map(_ => div("Admin", onClick --> cb(3), textDecoration:= td(3)))
+      if (state.isAdmin)
+        div("Admin", onClick --> cb(3), textDecoration:= td(3))
+      else
+        div()
     )
   }
 }

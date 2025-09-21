@@ -2,10 +2,12 @@ package gbge.ui.eps.portal
 
 import gbge.client.NewFU
 import gbge.shared.tm.{PlayerPerspective, SpectatorPerspective}
-import gbge.ui.eps.player.{ClientState, NewPlayerEvent}
+import gbge.ui.eps.player.ClientState
 import gbge.ui.eps.spectator.{CONNECTED, SpectatorState}
 import uiglue.{Event, EventLoop, UIState}
-import zio.{ZIO, UIO}
+import zio.{UIO, ZIO}
+
+import scala.language.implicitConversions
 
 abstract sealed class GeneralPortalClientState
 case object ActionIsNotSelected extends GeneralPortalClientState
@@ -32,12 +34,12 @@ case class PortalState(
       case UniversePerspectivePairReceived(perspective, frontendUniverse) =>
         perspective match {
           case SpectatorPerspective =>
-            val tempState = SpectatorState(frontendUniverse = Some(frontendUniverse), wsConnectionStatus = CONNECTED).processEvent(NewFU(frontendUniverse))._1
+            val tempState = SpectatorState(frontendUniverse = Some(frontendUniverse), sseStreamStatus = CONNECTED).processEvent(NewFU(frontendUniverse))._1
             this.copy(clientState = Some(tempState), generalPortalClientState = EverythingIsSelected)
           case PlayerPerspective(playerId) =>
             val player = frontendUniverse.players.find(_.id == playerId)
             if (player.isDefined) {
-              val state: ClientState = ClientState().processEvent(NewPlayerEvent(player.get))._1.processEvent(NewFU(frontendUniverse))._1
+              val state: ClientState = ClientState() //.processEvent(NewPlayerEvent(player.get))._1.processEvent(NewFU(frontendUniverse))._1
               this.copy(clientState = Some(state), generalPortalClientState = EverythingIsSelected)
             } else {
               this.copy(clientState = None, generalPortalClientState = MysteriousError)

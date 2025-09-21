@@ -1,34 +1,32 @@
 package gbge.shared.tm
 
 import gbge.shared.FrontendUniverse
-import upickle.default.{macroRW, ReadWriter => RW}
+import zio.json._
+import zio.schema.{DeriveSchema, Schema}
 
-abstract sealed class PortalMessage
+sealed trait PortalMessage
 
 object PortalMessage {
-  implicit def rw: RW[PortalMessage] = macroRW
+  implicit val codec: JsonCodec[PortalMessage] =
+    DeriveJsonCodec.gen[PortalMessage]
+
+  implicit val schema: Schema[PortalMessage] = DeriveSchema.gen
 }
 
 case class PortalMessageWithPayload(rawFU: String , perspective: Perspective) extends PortalMessage
 
 object PortalMessageWithPayload {
-  implicit def rw: RW[PortalMessageWithPayload] = macroRW
 
   def create(fu: FrontendUniverse, perspective: Perspective): PortalMessageWithPayload = {
-    PortalMessageWithPayload(fu.serialize(), perspective)
+    PortalMessageWithPayload(fu.toString(), perspective)
   }
 }
 
-case object ActionNeedsToBeSelected extends PortalMessage{
-  implicit def rw: RW[ActionNeedsToBeSelected.type] = macroRW
-}
+case object ActionNeedsToBeSelected extends PortalMessage
 
 case class PerspectiveNeedsToBeSelected(selectedAction: Int) extends PortalMessage
 
-object PerspectiveNeedsToBeSelected {
-  implicit def rw: RW[PerspectiveNeedsToBeSelected] = macroRW
-}
+object PerspectiveNeedsToBeSelected
 
-case object MysteriousError0 extends PortalMessage {
-  implicit def rw: RW[MysteriousError0.type] = macroRW
-}
+
+case object MysteriousError0 extends PortalMessage

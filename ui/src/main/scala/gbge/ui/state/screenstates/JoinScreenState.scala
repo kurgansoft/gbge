@@ -14,7 +14,7 @@ case class ErrorInput(message: String) extends JoinScreenEvent
 
 case class JoinScreenState(nameInput: String = "", submitEnabled: Boolean = false, errorMessage: Option[String] = None) extends OfflineState {
 
-  override def handleScreenEvent(sa: ScreenEvent, fu: Option[FrontendUniverse], you: Option[FrontendPlayer]): (OfflineState, UIO[List[PlayerEvent]]) = sa match {
+  override def handleScreenEvent(sa: ScreenEvent, fu: Option[FrontendUniverse], playerId: Option[Int]): (OfflineState, UIO[List[PlayerEvent]]) = sa match {
     case wsa: JoinScreenEvent => reduce0(wsa)
     case _ => this
   }

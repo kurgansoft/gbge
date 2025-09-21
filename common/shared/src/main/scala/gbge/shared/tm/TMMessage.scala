@@ -1,20 +1,18 @@
 package gbge.shared.tm
 
-import upickle.default.{macroRW, ReadWriter => RW}
+import zio.json._
+import zio.schema.{DeriveSchema, Schema}
 
-abstract sealed class TMMessage
+sealed trait TMMessage
 
 object TMMessage {
-  implicit def rw: RW[TMMessage] = macroRW
+  implicit val codec: JsonCodec[TMMessage] =
+    DeriveJsonCodec.gen[TMMessage]
+
+  implicit val schema: Schema[TMMessage] = DeriveSchema.gen
 }
 
 case class PortalId(id: Int) extends TMMessage
 
-object PortalId {
-  implicit def rw: RW[PortalId] = macroRW
-}
-
-case object Update extends TMMessage {
-  implicit def rw: RW[Update.type] = macroRW
-}
+case object Update extends TMMessage
 

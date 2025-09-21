@@ -1,19 +1,19 @@
 package chat.backend.launchers
 
-import chat.backend.ChatGame
-import chat.shared.ClientChatGame
-import gbge.backend.server.CustomServer
+import chat.backend.BackendChatGameProps
+import gbge.backend.{BackendGameProps, GenericLauncher}
+import zio.{Scope, ZIO, ZIOAppDefault}
 
-object Launcher extends CustomServer {
-  gbge.shared.RG.registeredGames = List(ClientChatGame)
-  gbge.backend.RG.registeredGames = List(ChatGame)
+object Launcher extends ZIOAppDefault {
+  
+  private val games: Seq[BackendGameProps[_,_]] = Seq(BackendChatGameProps)
 
-  System.setProperty("tmEnabled", "true")
+  private val gl = GenericLauncher(
+    games,
+    "???",
+    "???"
+  )
 
-  assert(gbge.backend.RG.registeredGames.size == gbge.shared.RG.registeredGames.size)
-  gbge.backend.RG.registeredGames.zip(gbge.shared.RG.registeredGames).foreach(a => {
-    assert(a._1.frontendGame == a._2)
-  })
-
-  override val jsLocation: Option[String] = Some("ui/target/scala-3.3.0/")
+  override def run: ZIO[Scope, Any, Unit] = gl.launch
 }
+

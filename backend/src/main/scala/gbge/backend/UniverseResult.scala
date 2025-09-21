@@ -1,13 +1,22 @@
 package gbge.backend
 
+import gbge.backend.models.Universe
 import gbge.shared.FrontendPlayer
 import gbge.shared.actions.Action
 import zio.IO
+import zio.json.{DeriveJsonCodec, JsonCodec}
+import zio.schema.{DeriveSchema, Schema}
 
-abstract sealed class UniverseResult
+sealed trait  UniverseResult
 
-abstract sealed class Failure extends UniverseResult
-abstract sealed class Success extends UniverseResult
+sealed trait Failure extends UniverseResult {
+    implicit val codec: JsonCodec[Failure] =
+      DeriveJsonCodec.gen[Failure]
+
+    implicit val schema: Schema[Failure] = DeriveSchema.gen
+}
+
+sealed trait Success extends UniverseResult
 
 case object OK extends Success
 case class OKWithMessage(message: String) extends Success

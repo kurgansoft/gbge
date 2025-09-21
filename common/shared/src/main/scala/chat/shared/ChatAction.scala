@@ -1,18 +1,16 @@
 package chat.shared
 
 import gbge.shared.actions.GameAction
-import upickle.default.{macroRW, ReadWriter => RW}
+import zio.json.{DeriveJsonCodec, JsonCodec}
+import zio.schema.{DeriveSchema, Schema}
 
-abstract sealed class ChatAction extends GameAction {
-  override def serialize(): String = upickle.default.write[ChatAction](this)
-}
+sealed trait ChatAction extends GameAction
 
 object ChatAction {
-  implicit def rw: RW[ChatAction] = macroRW
+  implicit val schema: Schema[ChatAction] = DeriveSchema.gen
+
+  implicit val codec: JsonCodec[ChatAction] =
+    DeriveJsonCodec.gen[ChatAction]
 }
 
 case class SendMessage(message: String) extends ChatAction
-
-object SendMessage {
-  implicit def rw: RW[SendMessage] = macroRW
-}

@@ -1,27 +1,26 @@
 package gbge.shared.tm
 
-import upickle.default.{macroRW, ReadWriter => RW}
+import zio.json._
+import zio.schema.{DeriveSchema, Schema}
 
-abstract sealed class Perspective {
+sealed trait Perspective {
   val id: Int
 }
 
-case object SpectatorPerspective extends Perspective {
-  override val id: Int = 0
-  implicit def rw: RW[SpectatorPerspective.type] = macroRW
-}
-case class PlayerPerspective(playerId: Int) extends Perspective {
-  override val id: Int = playerId
-}
-
 object Perspective {
-  implicit def rw: RW[Perspective] = macroRW
+  implicit val codec: JsonCodec[Perspective] =
+    DeriveJsonCodec.gen[Perspective]
+
+  implicit val schema: Schema[Perspective] = DeriveSchema.gen
 
   def apply(number: Int): Perspective = {
     if (number == 0) SpectatorPerspective else PlayerPerspective(number)
   }
 }
 
-object PlayerPerspective {
-  implicit def rw: RW[PlayerPerspective] = macroRW
+case object SpectatorPerspective extends Perspective {
+  override val id: Int = 0
+}
+case class PlayerPerspective(playerId: Int) extends Perspective {
+  override val id: Int = playerId
 }

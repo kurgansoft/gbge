@@ -1,10 +1,15 @@
 package chat.shared
 
 import gbge.shared.GameRole
-import upickle.default.{macroRW, ReadWriter => RW}
+import zio.json.{DeriveJsonCodec, JsonCodec}
+import zio.schema.{DeriveSchema, Schema}
 
 case class Speaker(override val roleId: Int) extends GameRole
 
 object Speaker {
-  implicit def rw: RW[Speaker] = macroRW
+
+  implicit val schema: Schema[Speaker] = DeriveSchema.gen
+  
+  implicit val codec: JsonCodec[Speaker] =
+    DeriveJsonCodec.gen[Speaker]
 }

@@ -13,10 +13,11 @@ object PortalEffects {
   def setUpPortalWSConnection(id: Int): EventHandler[PortalClientEvent] => UIO[List[PortalClientEvent]] = eventHandler => {
     val portalSocket = new WebSocket(Urls.portalSocketURLForClients + id.toString)
     portalSocket.onmessage = message => {
-      val payload: PortalMessage = upickle.default.read[PortalMessage](message.data.toString)
+//      val payload: PortalMessage = upickle.default.read[PortalMessage](message.data.toString)
+      val payload: PortalMessage = ???
       payload match {
         case PortalMessageWithPayload(rawFU, perspective) =>
-          val fu = FrontendUniverse.decode(rawFU)
+          val fu: FrontendUniverse = ???
           eventHandler(UniversePerspectivePairReceived(perspective, fu))
         case ActionNeedsToBeSelected =>
           eventHandler(ActionNeedsToBeSelectedEvent)

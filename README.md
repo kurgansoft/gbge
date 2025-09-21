@@ -29,7 +29,7 @@ have defined in the shared module.
 
 2. Extending from gbge.ui.state.OfflineState implement the offline state of your UI.
 
-3. Create an object which extends gbge.ui.UIExport.
+3. Create an object which extends UIExport ==> ClientGameProps
 
 4. The UI assets (images, sounds, etc) should be put in the backend module under
 resources/ui/games/<gamename>

@@ -1,27 +1,27 @@
 package gbge.ui.display
 
-import gbge.ui.eps.player.ClientState
+import gbge.ui.eps.player.{ClientState, CreateSSEStream}
 import gbge.ui.eps.spectator.{Screens0, SpectatorState}
 import japgolly.scalajs.react.ScalaComponent
 import japgolly.scalajs.react.vdom.TagOf
-import japgolly.scalajs.react.vdom.all._
+import japgolly.scalajs.react.vdom.all.*
 import org.scalajs.dom.html.Div
 import uiglue.{Event, EventLoop}
 
 object Displayer {
 
   val rootComponent = ScalaComponent.builder[(ClientState, uiglue.EventLoop.EventHandler[Event])]("RootComponent")
-    .render_P(t => {
+    .render_P({case (clientState, eventHandler) =>
       div(position:= "fixed", top:="0px", bottom:="0px", left:="0px", right:="0px",
-        displayer(t._1, t._2)
+        displayer(clientState, eventHandler)
       )
     })
     .build
 
   val spectatorRootComponent = ScalaComponent.builder[(SpectatorState, EventLoop.EventHandler[Event])]("SpectatorRootComponent")
-    .render_P(t => {
+    .render_P({case (clientState, eventHandler) =>
       div(position:= "fixed", top:="0px", bottom:="0px", left:="0px", right:="0px",
-        Screens0.root(t._1, t._2)
+        Screens0.root(clientState, eventHandler)
       )
     })
     .build

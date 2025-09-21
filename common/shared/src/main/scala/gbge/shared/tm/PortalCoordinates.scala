@@ -1,6 +1,7 @@
 package gbge.shared.tm
 
-import upickle.default.{macroRW, ReadWriter => RW}
+import zio.json.*
+import zio.schema.{DeriveSchema, Schema}
 
 case class PortalCoordinates(
                               portalId: Int,
@@ -8,5 +9,10 @@ case class PortalCoordinates(
                               selectedPerspective: Option[Perspective])
 
 object PortalCoordinates {
-  implicit def rw: RW[PortalCoordinates] = macroRW
+
+  implicit val codec: JsonCodec[PortalCoordinates] =
+    DeriveJsonCodec.gen[PortalCoordinates]
+
+  implicit val schema: Schema[PortalCoordinates] = DeriveSchema.gen
+
 }

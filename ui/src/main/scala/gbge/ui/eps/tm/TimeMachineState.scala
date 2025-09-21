@@ -1,15 +1,16 @@
 package gbge.ui.eps.tm
 
-import gbge.client._
-import gbge.shared.tm._
+import gbge.client.*
+import gbge.shared.tm.*
 import gbge.shared.{ClientTimeMachine, FrontendPlayer}
-import gbge.ui.eps.player.{ClientState, NewPlayerEvent}
+import gbge.ui.eps.player.ClientState
 import gbge.ui.eps.spectator.{CONNECTED, SpectatorState}
 import org.scalajs.dom.WebSocket
 import uiglue.EventLoop.EventHandler
 import uiglue.{Event, UIState}
-import zio._
+import zio.*
 
+import scala.language.implicitConversions
 import scala.util.Try
 
 case class TimeMachineState(
@@ -95,8 +96,9 @@ case class TimeMachineState(
       if (timeMachine.stateCache.get(selectedAction.get, selectedPerspective.get).isDefined) {
         val fu = timeMachine.stateCache(selectedAction.get, selectedPerspective.get)
         if (player.isDefined) {
-          val clientState = ClientState().processEvent(NewPlayerEvent(player.get))._1
-            .handleNewFU(fu)._1
+          val clientState = ClientState()
+//          val clientState = ClientState().processEvent(NewPlayerEvent(player.get))._1
+//            .handleNewFU(fu)._1
           Right(clientState)
         } else {
           val spectatorState = SpectatorState(frontendUniverse = Some(fu), CONNECTED).processEvent(NewFU(fu))._1

@@ -1,15 +1,15 @@
 package gbge.ui.eps.player
 
-import gbge.shared.FrontendPlayer
-import org.scalajs.dom.WebSocket
+import gbge.shared.JoinResponse
 
-abstract class PlayerEvent extends uiglue.Event
+sealed trait PlayerEvent extends uiglue.Event
 case object BootstrapPlayerEvent extends PlayerEvent
 case class JoinWithName(name: String) extends PlayerEvent
+case object CheckForTokenEvent extends PlayerEvent
 case class RecoverTokenEvent(token: String) extends PlayerEvent
-case class NewPlayerEvent(player: FrontendPlayer) extends PlayerEvent
-case object SetupWSConnection extends PlayerEvent
-case class RegisterWS(socket: WebSocket) extends PlayerEvent
+case class PlayerRecovered(id: Int, token: String) extends PlayerEvent
+case class JoinResponseEvent(joinResponse: JoinResponse) extends PlayerEvent
+case object CreateSSEStream extends PlayerEvent
 abstract class ScreenEvent extends PlayerEvent
 abstract class UIEvent extends PlayerEvent
 

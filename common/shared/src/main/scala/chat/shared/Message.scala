@@ -1,9 +1,10 @@
 package chat.shared
 
-import upickle.default.{macroRW, ReadWriter => RW}
+import zio.json.{DeriveJsonCodec, JsonCodec}
+
 
 case class Message(roleNumber: Int, message: String)
 
 object Message {
-  implicit def rw: RW[Message] = macroRW
+  implicit val codec: JsonCodec[Message] = DeriveJsonCodec.gen[Message]
 }

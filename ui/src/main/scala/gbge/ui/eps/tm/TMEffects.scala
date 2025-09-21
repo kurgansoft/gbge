@@ -6,10 +6,9 @@ import gbge.ui.Urls
 import org.scalajs.dom.WebSocket
 import sttp.capabilities
 import sttp.capabilities.zio.ZioStreams
-import sttp.client3.impl.zio.FetchZioBackend
-import sttp.client3.{SttpBackend, UriContext, basicRequest}
+import sttp.client4.impl.zio.FetchZioBackend
+import sttp.client4.{UriContext, WebSocketStreamBackend, basicRequest}
 import uiglue.EventLoop.EventHandler
-import upickle.default.{read, write}
 import zio.{ZIO, *}
 import zio.ZIO.*
 
@@ -17,7 +16,7 @@ import scala.util.Try
 
 object TMEffects {
 
-  private val backend: SttpBackend[Task, ZioStreams with capabilities.WebSockets] = FetchZioBackend()
+  private val backend: WebSocketStreamBackend[Task, ZioStreams] = FetchZioBackend()
 
   val retrieveTimeMachine: UIO[List[TMClientEvent]] = {
     val request = basicRequest.get(uri"${Urls.tmActionsPostFix}")
@@ -36,7 +35,7 @@ object TMEffects {
     ZIO.log("retrieving state") *> backend.send(request).map(response => response.body match
       case Left(_) => List.empty
       case Right(content) =>
-        val fu: FrontendUniverse = FrontendUniverse.decode(content)
+        val fu: FrontendUniverse = ???
         List(TMStateArrived(actionNumber, perspective, fu))
     ).orDie
   }
@@ -49,7 +48,7 @@ object TMEffects {
     }
     val portalSocket = new WebSocket(url)
     portalSocket.onmessage = message => {
-      val id = Try(upickle.default.read[TMMessage](message.data.toString))
+      val id: Try[TMMessage] = ??? //Try(upickle.default.read[TMMessage](message.data.toString))
       if (id.isSuccess) {
         import gbge.shared.tm.PortalId
         id.get match {
@@ -81,8 +80,8 @@ object TMEffects {
   }
 
   private def submitPortalCoordinates(coordinates: PortalCoordinates): UIO[List[TMClientEvent]] = {
-    val request = basicRequest.post(uri"${Urls.setPortalCoordinatesPostFix}").body(write(coordinates))
-    backend.send(request).map(_ => List.empty).orDie
+    val request = basicRequest.post(uri"${Urls.setPortalCoordinatesPostFix}").body("write(coordinates)")
+    backend.send(request).as(List.empty).orDie
   }
 
   def persistToHashAndSubmitPortalCoordinates(tmState: TimeMachineState): UIO[List[TMClientEvent]] = {

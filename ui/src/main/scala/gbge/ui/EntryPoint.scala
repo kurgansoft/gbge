@@ -1,6 +1,6 @@
 package gbge.ui
 
-import gbge.ui.eps.player.{BootstrapPlayerEvent, ClientState, SetupWSConnection}
+import gbge.ui.eps.player.{BootstrapPlayerEvent, CheckForTokenEvent, ClientState, CreateSSEStream}
 import gbge.ui.eps.portal.{PortalClientEvent, PortalState}
 import gbge.ui.eps.spectator.SpectatorState
 import gbge.ui.eps.tm.{TMClientEvent, TimeMachineState}
@@ -13,7 +13,7 @@ import zio.internal.stacktracer.Tracer
 import scala.concurrent.Future
 import scala.scalajs.js.annotation.JSExport
 
-class EntryPoint {
+trait EntryPoint {
 
   implicit val ec: scala.concurrent.ExecutionContext = org.scalajs.macrotaskexecutor.MacrotaskExecutor
 
@@ -32,7 +32,7 @@ class EntryPoint {
           .renderIntoDOM(div)
       }
 
-    val loop = EventLoop.createLoop(state, renderFunction, List(SetupWSConnection))
+    val loop = EventLoop.createLoop(state, renderFunction, List(CreateSSEStream))
 
     Future {
       zio.Runtime.default.unsafe.run(ZIO.log("spectator entry point invoked") *> loop)
@@ -51,7 +51,7 @@ class EntryPoint {
           .renderIntoDOM(div)
       }
 
-    val loop = EventLoop.createLoop(state, renderFunction, List(BootstrapPlayerEvent))
+    val loop = EventLoop.createLoop(state, renderFunction, List(CheckForTokenEvent))
 
     Future {
       zio.Runtime.default.unsafe.run(ZIO.log("player entry point invoked") *> loop)

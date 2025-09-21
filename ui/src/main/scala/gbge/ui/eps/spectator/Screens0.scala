@@ -12,7 +12,7 @@ object Screens0 {
   def root(state: SpectatorState, eventHandler: EventLoop.EventHandler[Event]): TagOf[Div] = {
     implicit val players: List[FrontendPlayer] = state.frontendUniverse.map(_.players.toList).orNull
 
-    state.wsConnectionStatus match {
+    state.sseStreamStatus match {
       case NOT_YET_ESTABLISHED => div(h1("WS connection is NOT YET ESTABLISHED", color:="yellow"))
       case BROKEN => div(h1("WS connection is BROKEN", color:="yellow"))
       case CONNECTED =>
@@ -41,7 +41,7 @@ object Screens0 {
           br,div("Players:"),
           br,
           div(position:="relative", left:="30px",
-            people(fu.players.toList)
+            people(fu.players)
           )
        )
       )

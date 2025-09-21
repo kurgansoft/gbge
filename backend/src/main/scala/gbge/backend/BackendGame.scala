@@ -1,13 +1,13 @@
 package gbge.backend
 
-import gbge.shared.actions.GameAction
-import gbge.shared._
+import gbge.backend.models.Player
+import gbge.shared.*
+import gbge.shared.actions.{Action, GameAction}
+import zio.IO
 
-case class Player(id: Int, name: String, token: String, isAdmin: Boolean = false, role: Option[Int] = None) {
-  def toFrontendPlayer(): FrontendPlayer = FrontendPlayer(id, name, isAdmin, role)
-}
+import scala.language.implicitConversions
 
-trait BackendGame[+fg <: FrontendGame[GameAction]] extends Game {
+trait BackendGame[GA <: GameAction, FG <: FrontendGame[GA]] extends Game {
 
   implicit def cnToTuple2(result: UniverseResult): (Any, UniverseResult) = (this, result)
 
@@ -15,17 +15,16 @@ trait BackendGame[+fg <: FrontendGame[GameAction]] extends Game {
 
   val noOfPlayers: Int
 
-  def increaseRoomSize(): (BackendGame[fg], UniverseResult) = {
-    (this, GeneralFailure("Increasing the room size is not supported in this game!"))
-  }
+  def increaseRoomSize(): Either[Failure, BackendGame[_ <: GA, _ <: FG]] =
+    Left(GeneralFailure("Increasing the room size is not supported in this game!"))
 
-  def decreaseRoomSize(): (BackendGame[fg], UniverseResult) = {
-    (this, GeneralFailure("Decreasing the room size is not supported in this game!"))
-  }
+  def decreaseRoomSize(): Either[Failure, BackendGame[_ <: GA, _ <: FG]] =
+    Left(GeneralFailure("Decreasing the room size is not supported in this game!"))
 
-  def reduce(gameAction: GameAction, invoker: Option[Player]): (BackendGame[fg], UniverseResult)
+  def reduce(gameAction: GameAction, invoker: Player): Either[Failure, (BackendGame[_ <: GA, _ <: FG], IO[Failure, Seq[Action]])]
 
-  def toFrontendGame(role: Option[Int] = None): fg
+  def toFrontendGame(role: Option[Int] = None): FG
+
   def idToRoleDescription(id: Int): Option[String] = {
     try {
       Some(roles(id).toString)
@@ -34,5 +33,4 @@ trait BackendGame[+fg <: FrontendGame[GameAction]] extends Game {
     }
   }
 
-  def decodeAction(payload: String): GameAction = this.toFrontendGame().decodeAction(payload)
 }

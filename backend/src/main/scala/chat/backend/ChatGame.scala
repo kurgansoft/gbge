@@ -1,41 +1,35 @@
 package chat.backend
 
-import chat.shared.{AbstractChatGame, ChatAction, ClientChatGame, Message, SendMessage}
-import gbge.backend.{BackendGame, GeneralFailure, OK, Player, Startable, UnauthorizedFailure, UniverseResult}
-import gbge.shared.{DecodeCapable, FrontendGame, GameState, IN_PROGRESS}
-import gbge.shared.actions.{Action, GameAction, NaturalLink}
+import chat.shared.*
+import gbge.backend.*
+import gbge.backend.models.Player
+import gbge.shared.GameState
+import gbge.shared.GameState.*
+import gbge.shared.actions.{Action, GameAction}
+import zio.{IO, ZIO}
 
-case class ChatGame(override val messages: List[Message] = List.empty) extends AbstractChatGame with BackendGame[ClientChatGame] {
+case class ChatGame(override val messages: List[Message] = List.empty) extends AbstractChatGame with BackendGame[ChatAction, ClientChatGame] {
   override val state: GameState = IN_PROGRESS
 
   override val noOfPlayers: Int = 6
 
-  override def reduce(gameAction: GameAction, invoker: Option[Player]): (BackendGame[ClientChatGame], UniverseResult) = {
+  override def reduce(gameAction: GameAction, invoker: Player): Either[Failure, (ChatGame, IO[Failure, Seq[Action]])] = {
     gameAction match {
-      case chatAction: ChatAction => reduce0(chatAction, invoker.flatMap(_.role))
-      case _ => (this, GeneralFailure("Improper action"))
+      case chatAction: ChatAction => reduce0(chatAction, invoker.role)
+      case _ => Left(GeneralFailure("Provided action cannot be handled by this game."))
     }
   }
 
-  def reduce0(chatAction: ChatAction, invokerRole: Option[Int]): (ChatGame, UniverseResult) = {
+  def reduce0(chatAction: ChatAction, invokerRole: Option[Int]): Either[Failure, (ChatGame, IO[Failure, Seq[Action]])] = {
     chatAction match {
       case SendMessage(message) => {
         invokerRole match {
-          case None => (this, UnauthorizedFailure())
-          case Some(roleNumber) => (this.copy(messages = messages.appended(Message(roleNumber, message))), OK)
+          case None => Left(UnauthorizedFailure("..."))
+          case Some(roleNumber) => Right((this.copy(messages = messages.appended(Message(roleNumber, message))), ZIO.succeed(Seq.empty)))
         }
       }
     }
   }
 
   override def toFrontendGame(role: Option[Int]): ClientChatGame = ClientChatGame(messages)
-}
-
-object ChatGame extends Startable {
-  override def start(noOfPlayers: Int): (BackendGame[_ <: FrontendGame[_ <: GameAction]], Option[Action]) = {
-    (ChatGame(), Some(NaturalLink((1 to Math.min(noOfPlayers, 6)).toList)))
-  }
-
-  override val frontendGame: DecodeCapable = ClientChatGame
-  override val name: String = "Chat"
 }

@@ -25,7 +25,7 @@ object Screens {
     val jss = state.offlineState.asInstanceOf[JoinScreenState]
 
     def fieldContentChangedCallback(e: ReactEventFromInput): Callback = Callback {
-        eventHandler(NameInput(e.target.value))
+      eventHandler(NameInput(e.target.value))
     }
 
     val nameInput = input(`type`:= "text", maxLength:= 20, fontSize := "50", onChange ==> fieldContentChangedCallback)
@@ -51,7 +51,7 @@ object Screens {
     div(color:="yellow", display:="flex", flexDirection:="column", alignItems:="center", overflowY:="auto",
       h1("META SCREEN"),
       button(`class`:="btn btn-primary", "Log out", onClick --> Callback {
-        eventHandler(DispatchActionWithToken(KickPlayer(state.you.get.id)))
+        eventHandler(DispatchActionWithToken(KickPlayer(state.you.get._1)))
       }),br,
       Option.when(state.frontendUniverse.flatMap(_.game).isDefined)(div(roleButton, br)),
       h1("Game specific settings/actions:"),br,
@@ -61,8 +61,9 @@ object Screens {
   }
 
   def playerRoleScreen(state: ClientState, eventHandler: EventLoop.EventHandler[Event]) = {
-    val you = state.you.get
+    val yourID = state.you.get._1
     val players: List[FrontendPlayer] = state.frontendUniverse.map(_.players).get
+    val you: FrontendPlayer = players.find(_.id == yourID).get
     val game = state.frontendUniverse.get.game.get
     div(color:="yellow",
       button(`class`:="btn btn-primary", "<-", onClick --> Callback {
@@ -143,11 +144,15 @@ object Screens {
     }
 
     val sg = state.frontendUniverse.get.selectedGame
-    val name: String = state.you.map(_.name).get
-    val games = gbge.shared.RG.registeredGames.map(_.name)
-    val playerNames = state.frontendUniverse.get.players.map(_.name)
 
-    if (state.you.exists(_.isAdmin)) {
+    val games = gbge.ui.RG.registeredGames.map(_.name)
+    val playerNames = state.frontendUniverse.get.players.map(_.name)
+    val name: String = {
+      val id = state.you.map(_._1).get
+      state.frontendUniverse.get.players.find(_.id == id).getOrElse(???).name
+    }
+
+    if (state.isAdmin) {
       div(`class`:= "text-center", color:="yellow", overflowY:="auto", height:="100%",
         p("Hello " + name + "!" ),
         p("Please select a game, and start it when everyone is around!"),
