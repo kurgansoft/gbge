@@ -5,7 +5,7 @@ import gbge.backend.new_stuff.mocks.MockTokenGenerator
 import gbge.backend.services.state_manager.SimpleStateManager
 import gbge.backend.services.{MainService, MainServiceLive, SequentialTokenGenerator}
 import gbge.backend.BackendGameProps
-import gbge.backend.gameroutes.MyRoutes
+import gbge.backend.gameroutes.GameRoutes
 import zio.http.*
 import zio.mock.Expectation
 import zio.test.{Spec, ZIOSpecDefault, assertTrue}
@@ -15,7 +15,7 @@ import java.io.IOException
 
 object JoinRouteTest extends ZIOSpecDefault {
 
-  private val routeUnderTest: Routes[MainService, Nothing] = MyRoutes("","").joinRoute.toRoutes
+  private val routeUnderTest: Routes[MainService, Nothing] = GameRoutes.joinRoute.toRoutes
 
   private val mockTokenGenerator = MockTokenGenerator.GenerateToken(Expectation.value("mockToken"))
 

@@ -9,9 +9,7 @@ object Launcher extends ZIOAppDefault {
   private val games: Seq[BackendGameProps[_,_]] = Seq(BackendChatGameProps)
 
   private val gl = GenericLauncher(
-    games,
-    "???",
-    "???"
+    games
   )
 
   override def run: ZIO[Scope, Any, Unit] = gl.launch

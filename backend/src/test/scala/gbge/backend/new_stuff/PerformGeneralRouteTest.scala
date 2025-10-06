@@ -1,7 +1,7 @@
 package gbge.backend.new_stuff
 
 import gbge.backend.endpoints_and_aspects.Aspects
-import gbge.backend.gameroutes.MyRoutes
+import gbge.backend.gameroutes.GameRoutes
 import gbge.backend.models.{Player, Universe}
 import gbge.backend.new_stuff.mocks.MockMainService
 import gbge.backend.services.MainService
@@ -15,7 +15,7 @@ import zio.{Ref, Scope, ZEnvironment, ZIO}
 object PerformGeneralRouteTest extends ZIOSpecDefault {
 
   private val routeUnderTest: Routes[MainService & Ref[Universe], Nothing] =
-    MyRoutes("","").performGeneralActionRoute.toRoutes @@ Aspects.tokenExtractorAspect
+    GameRoutes.performGeneralActionRoute.toRoutes @@ Aspects.tokenExtractorAspect
 
   private def createRequestWithTokenAndAction(token: String, action: GeneralAction) =
     Request.post(URL(Path.root./("performAction")), Body.fromString(action.toJson)).setHeaders(Headers(Header.Authorization.Bearer(token)))
