@@ -22,17 +22,16 @@ case class StaticRoutes(devStaticRouteOptions: Option[DevStaticRouteOptions] = N
 
   private val mainJSRoute: Route[Any, Nothing] = Method.GET / "main.js" -> mainJSHandler
 
-  private val mw = Middleware.serveResources(Path.empty, "gbge/ui")
+  private val resourceRoutes = Routes.empty @@ Middleware.serveResources(Path.empty, "gbge/ui")
 
   private val staticAssetsRoute: Routes[Any, Nothing] = {
-    val resourcesRoute = Routes.empty @@ mw
     if (devStaticRouteOptions.isEmpty)
-      resourcesRoute
+      resourceRoutes
     else {
-      val mw2 = Middleware.serveDirectory(Path.empty,
-        new File(devStaticRouteOptions.get.staticFilesFolder)
-      )
-      resourcesRoute @@ mw2
+      val middlewares = devStaticRouteOptions.get.staticFileFolders.map({ case (pathPrefix, filePath) =>
+        Middleware.serveDirectory(Path(pathPrefix), new File(filePath))
+      })
+      middlewares.foldLeft(resourceRoutes)((routesAcc, middleware) => routesAcc @@ middleware)
     }
   }
   
@@ -41,8 +40,12 @@ case class StaticRoutes(devStaticRouteOptions: Option[DevStaticRouteOptions] = N
 }
 
 object StaticRoutes {
+  
+  private type PathPrefix = String
+  private type FilePath = String
+  
   case class DevStaticRouteOptions(
     mainFilePath: String,
-    staticFilesFolder: String
+    staticFileFolders: Map[PathPrefix, FilePath] = Map.empty
   )
 }
