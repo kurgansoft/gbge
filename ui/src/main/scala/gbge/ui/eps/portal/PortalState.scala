@@ -18,9 +18,9 @@ case object MysteriousError extends GeneralPortalClientState
 
 case class PortalState(
                         portalId: Option[Int] = None,
-                        clientState: Option[UIState[Event]] = None,
+                        clientState: Option[UIState[Event, Any]] = None,
                         generalPortalClientState: GeneralPortalClientState = WaitingForInfo
-                      ) extends UIState[PortalClientEvent] {
+                      ) extends UIState[PortalClientEvent, Any] {
 
   implicit def implicitConversion(state: PortalState): (PortalState, EventLoop.EventHandler[PortalClientEvent] => UIO[List[PortalClientEvent]]) =
     (state, _ => ZIO.succeed(List.empty))
@@ -40,7 +40,8 @@ case class PortalState(
             val player = frontendUniverse.players.find(_.id == playerId)
             if (player.isDefined) {
               val state: ClientState = ClientState() //.processEvent(NewPlayerEvent(player.get))._1.processEvent(NewFU(frontendUniverse))._1
-              this.copy(clientState = Some(state), generalPortalClientState = EverythingIsSelected)
+//              this.copy(clientState = Some(state), generalPortalClientState = EverythingIsSelected)
+              ???
             } else {
               this.copy(clientState = None, generalPortalClientState = MysteriousError)
             }

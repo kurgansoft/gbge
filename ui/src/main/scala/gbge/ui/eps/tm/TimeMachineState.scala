@@ -19,10 +19,10 @@ case class TimeMachineState(
                              selectedAction: Option[Int] = None,
                              selectedPerspective: Option[Perspective] = None,
                              componentDisplayMode: ComponentDisplayMode = PPRINT,
-                             selectedClientState: Either[CSState, UIState[Event]] = Left(CS_NOT_SELECTED),
+                             selectedClientState: Either[CSState, UIState[Event, Any]] = Left(CS_NOT_SELECTED),
                              portalId: Option[Int] = None,
                              portalSocket: Option[WebSocket] = None
-                      ) extends UIState[TMClientEvent] {
+                      ) extends UIState[TMClientEvent, Any] {
 
   val stringToPersist: String = {
     val portalIdAsString: String = portalId.map(_.toString).getOrElse("")
@@ -84,7 +84,7 @@ case class TimeMachineState(
   }
 
   // Populates the selectedClientState field if it is possible from the cache
-  private lazy val calculateClientState: Either[CSState, UIState[Event]] = {
+  private lazy val calculateClientState: Either[CSState, UIState[Event, Any]] = {
     if (selectedAction.isDefined && selectedPerspective.isDefined) {
       val players = getPlayersForSelectedAction
       val player: Option[FrontendPlayer] = {
@@ -99,7 +99,8 @@ case class TimeMachineState(
           val clientState = ClientState()
 //          val clientState = ClientState().processEvent(NewPlayerEvent(player.get))._1
 //            .handleNewFU(fu)._1
-          Right(clientState)
+          ???
+//          Right(clientState)
         } else {
           val spectatorState = SpectatorState(frontendUniverse = Some(fu), CONNECTED).processEvent(NewFU(fu))._1
           Right(spectatorState)
@@ -134,9 +135,8 @@ case class TimeMachineState(
   override def processEvent(event: TMClientEvent): (TimeMachineState, EventHandler[TMClientEvent] => UIO[List[TMClientEvent]]) = {
     val x: (TimeMachineState, EventHandler[TMClientEvent] => UIO[List[TMClientEvent]]) =
       event match {
-        case Start => {
+        case Start =>
           (this, TMEffects.recoverFromHash)
-        }
         case TimeMachineHaveArrived(tm) =>
           this.copy(timeMachine = tm, status = LOADED)
         case TMStateArrived(number, perspective, fu) => {

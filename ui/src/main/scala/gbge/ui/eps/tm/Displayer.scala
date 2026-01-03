@@ -95,7 +95,7 @@ object Displayer {
     )(Option.when(selected)(border:= "solid 2px blue").toTagMod)
   }
 
-  def perspectiveDisplayer(actionNumber: Option[Int], perspective: Option[Perspective], componentDisplayMode: ComponentDisplayMode, selectedClientState: Either[CSState, UIState[_]] = Left(CS_NOT_SELECTED))(implicit eventHandler: EventHandler[TMClientEvent]): TagOf[html.Div] = {
+  def perspectiveDisplayer(actionNumber: Option[Int], perspective: Option[Perspective], componentDisplayMode: ComponentDisplayMode, selectedClientState: Either[CSState, UIState[_, _]] = Left(CS_NOT_SELECTED))(implicit eventHandler: EventHandler[TMClientEvent]): TagOf[html.Div] = {
     if (actionNumber.isDefined && perspective.isEmpty)
       div(color:="yellow", "Choose a perspective!")
     else if (actionNumber.isEmpty || perspective.isEmpty)
@@ -131,7 +131,7 @@ object Displayer {
     )
   }
 
-  def innerPerspectiveDisplayer(uiState: UIState[_], componentDisplayMode: ComponentDisplayMode)(implicit eventHandler: EventHandler[TMClientEvent]): TagOf[html.Div] = {
+  def innerPerspectiveDisplayer(uiState: UIState[_, _], componentDisplayMode: ComponentDisplayMode)(implicit eventHandler: EventHandler[TMClientEvent]): TagOf[html.Div] = {
     val spectatorBridge: EventLoop.EventHandler[Event] = event => {
       eventHandler(EventFromSelectedPerspective(event))
     }

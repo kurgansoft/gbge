@@ -3,7 +3,8 @@ package gbge.client
 import gbge.shared.actions.{GameAction, GeneralAction}
 import gbge.shared.{FrontendUniverse, JoinResponse}
 import gbge.ui.eps.player.{JoinResponseEvent, PlayerEvent, PlayerRecovered, RecoverTokenEvent}
-import gbge.ui.{TokenRecoverFactory, Urls}
+import gbge.ui.token.TokenService
+import gbge.ui.Urls
 import org.scalajs.dom.EventSource
 import sttp.capabilities
 import sttp.capabilities.zio.ZioStreams
@@ -20,14 +21,15 @@ object ClientEffects {
 
   private val backend: WebSocketStreamBackend[Task, ZioStreams] = FetchZioBackend()
 
-  val recoverTokenEffect: UIO[List[PlayerEvent]] = {
-    val token = TokenRecoverFactory.getToken()
-    if (token.isDefined) {
-      ZIO.succeed(List(RecoverTokenEvent(token.get)))
+  val recoverTokenEffect: ZIO[TokenService, Nothing, List[PlayerEvent]] = for {
+    tokenService <- ZIO.service[TokenService]
+    token <- tokenService.getToken
+    result  = if (token.isDefined) {
+      List(RecoverTokenEvent(token.get))
     } else {
-      ZIO.succeed(List.empty)
+      List.empty
     }
-  }
+  } yield result
 
   def getPlayerWithToken(token0: String): UIO[List[PlayerEvent]] = {
 
@@ -92,7 +94,7 @@ object ClientEffects {
     q
   }
 
-  def joinWithName(name: String): UIO[List[PlayerEvent]] = {
+  def joinWithName(name: String): ZIO[TokenService, Nothing, List[PlayerEvent]] = {
 
     val request: Request[Either[ResponseException[String], JoinResponse]] =
       basicRequest.post(uri"${Urls.joinPostFix}").body(name)
@@ -103,12 +105,12 @@ object ClientEffects {
     backend.send(request).flatMap(response => response.body match
       case Left(_) => ZIO.succeed(List.empty)
       case Right(joinResponse) =>
-        println("your id: " + joinResponse.id)
-        println("your token: " + joinResponse.token)
-        TokenRecoverFactory.saveToken(joinResponse.token)
-        ZIO.succeed(List(
-          JoinResponseEvent(joinResponse),
-        ))
+        for {
+          _ <- zio.Console.printLine("your id: " + joinResponse.id)
+          _ <- zio.Console.printLine("your token: " + joinResponse.token)
+          tokenService <- ZIO.service[TokenService]
+          _ <- tokenService.saveToken(joinResponse.token)
+        } yield List(JoinResponseEvent(joinResponse))
     ).orDie
   }
 

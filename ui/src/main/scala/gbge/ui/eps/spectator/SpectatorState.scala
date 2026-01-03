@@ -19,8 +19,8 @@ case object BROKEN extends SSEStatus
 case class SpectatorState(
                            frontendUniverse: Option[FrontendUniverse] = None,
                            sseStreamStatus: SSEStatus = NOT_YET_ESTABLISHED,
-                           offlineState: OfflineState = EmptyOfflineState,
-                      ) extends UIState[uiglue.Event] {
+                           offlineState: OfflineState[Any] = EmptyOfflineState,
+                      ) extends UIState[uiglue.Event, Any] {
 
   def getCurrentGame: Option[ClientGameProps[_,_]] = {
     val selectedGameNumber = frontendUniverse.flatMap(_.selectedGame)
