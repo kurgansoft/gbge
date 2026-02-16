@@ -7,7 +7,6 @@ import gbge.ui.ClientGameProps
 import gbge.ui.state.OfflineState
 import gbge.ui.state.screenstates.{JoinScreenState, WelcomeScreenState}
 import gbge.ui.token.TokenService
-import org.scalajs.dom.WebSocket
 import uiglue.{Event, EventLoop, UIState}
 import zio.ZIO
 
@@ -18,7 +17,6 @@ case class ClientState(
                         you: Option[(Int, String)] = None,
                         offlineState: OfflineState[TokenService] = JoinScreenState(),
                         tab: Int = 1, // 1 -> general, 2 -> meta, 3-> admin
-                        ws: Option[WebSocket] = None
                       ) extends UIState[Event, TokenService] {
   lazy val playerId = you.getOrElse(???)._1
   lazy val player = frontendUniverse.get.players.find(_.id == playerId)

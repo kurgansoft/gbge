@@ -7,6 +7,7 @@ import zio.ZNothing
 import zio.http.*
 import zio.http.codec.HttpCodec.content
 import zio.http.codec.{HttpCodec, HttpContentCodec, PathCodec, StatusCodec}
+import zio.http.endpoint.AuthType.None
 import zio.http.endpoint.{AuthType, Endpoint}
 import zio.schema.Schema
 

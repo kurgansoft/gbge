@@ -8,7 +8,9 @@ import gbge.ui.token.TokenService
 import uiglue.Event
 import zio.ZIO
 
-abstract sealed class JoinScreenEvent extends ScreenEvent
+import scala.language.implicitConversions
+
+sealed trait JoinScreenEvent extends ScreenEvent
 case object SubmitName extends JoinScreenEvent
 case class NameInput(name: String) extends JoinScreenEvent
 case object DismissErrorMessage extends JoinScreenEvent

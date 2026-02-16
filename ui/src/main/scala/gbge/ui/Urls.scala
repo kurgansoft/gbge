@@ -5,13 +5,13 @@ object Urls {
 
   val statePostFix: String = "/api/state/"
 
-  val tmActionsPostFix = "/api/tm/clientTM"
+  val tmActionsPostFix = "/tm/actions"
 
   val tmStatePostFix = "/api/tm/state/"
 
   val savePostFix = "/api/save/"
 
-  val resetTMPostFix = "/api/resetTM/"
+  val resetTMPostFix = "/tm/reset"
 
   val stateURL: String = urlPrefix + statePostFix
 
@@ -22,7 +22,6 @@ object Urls {
   } else {
     "ws://" + hostname
   }
-  lazy val stateSocketURL: String = webSocketPrefix + "/api/stateSocket"
   lazy val portalSocketURL: String = webSocketPrefix + "/api/portalSocket"
   lazy val portalSocketURLForClients: String = webSocketPrefix + "/api/portalSocketForClients/"
 

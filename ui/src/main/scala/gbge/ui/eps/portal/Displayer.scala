@@ -30,7 +30,7 @@ object Displayer {
           portalState.clientState match {
             case Some(SpectatorState(frontendUniverse, wsConnectionStatus, offlineState)) =>
               Screens0.root(SpectatorState(frontendUniverse, wsConnectionStatus, offlineState), spectatorBridge)
-            case Some(ClientState(frontendUniverse, you, offlineState, tab, _)) =>
+            case Some(ClientState(frontendUniverse, you, offlineState, tab)) =>
               gbge.ui.display.Displayer.rootComponent(
                 (ClientState(frontendUniverse, you, offlineState, tab), playerBridge)
               ).vdomElement
@@ -43,7 +43,7 @@ object Displayer {
       portalState.clientState match {
         case Some(SpectatorState(frontendUniverse, wsConnectionStatus, offlineState)) =>
           Screens0.root(SpectatorState(frontendUniverse, wsConnectionStatus, offlineState), spectatorBridge)
-        case Some(ClientState(frontendUniverse, you, offlineState, tab, _)) =>
+        case Some(ClientState(frontendUniverse, you, offlineState, tab)) =>
           gbge.ui.display.Displayer.rootComponent(
             (ClientState(frontendUniverse, you, offlineState, tab), playerBridge)
           ).vdomElement

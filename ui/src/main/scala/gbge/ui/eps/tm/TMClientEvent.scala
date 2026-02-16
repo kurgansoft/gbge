@@ -1,13 +1,11 @@
 package gbge.ui.eps.tm
 
 import gbge.shared.{ClientTimeMachine, FrontendUniverse}
-import gbge.shared.actions.Action
-import gbge.shared.tm.{Perspective, TMMessage}
-import org.scalajs.dom.WebSocket
+import gbge.shared.tm.{ActionInvokerAndPlayers, Perspective, TMMessage}
 
-abstract sealed class TMClientEvent extends uiglue.Event
+sealed trait TMClientEvent extends uiglue.Event
 
-case class ActionsHaveArrived(actions: List[(Action, Option[String])]) extends TMClientEvent
+case class ActionsHaveArrived(actions: List[ActionInvokerAndPlayers]) extends TMClientEvent
 case class TimeMachineHaveArrived(tm: ClientTimeMachine) extends TMClientEvent
 case object TimeToPersistEvent extends TMClientEvent
 case object TimeMachineRetrievalFailed extends TMClientEvent
@@ -21,7 +19,6 @@ case class TMMessageContainer(tmMessage: TMMessage) extends TMClientEvent
 case class ResetTmToNumber(number: Int) extends TMClientEvent
 case class TmGotShrunk(number: Int) extends TMClientEvent
 case object Start extends TMClientEvent
-case class RegisterWebSocket(socket: WebSocket) extends TMClientEvent
 
 case class RecoveredHash(hash: String) extends TMClientEvent
 case object RetrieveMissingStates extends TMClientEvent

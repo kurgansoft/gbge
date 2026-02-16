@@ -1,9 +1,10 @@
 package gbge.backend.services.state_manager
 
-import gbge.backend.{Failure, BackendGameProps}
+import gbge.backend.{BackendGameProps, Failure}
 import gbge.backend.models.Universe
 import gbge.backend.services.TokenGenerator
 import gbge.shared.actions.Action
+import gbge.shared.tm.ActionStackInTransit
 import zio.{IO, Ref, ZIO, ZLayer}
 import zio.stream.{SubscriptionRef, ZPipeline, ZStream}
 
@@ -12,8 +13,8 @@ case class TimeMachineStateManager(
                                   ) extends TimeMachine  {
   override def update(action: Action, playerId: Option[Int]): IO[Failure, (Universe, ZIO[TokenGenerator, Failure, Seq[Action]])] = for {
     effectRef <- Ref.make[ZIO[TokenGenerator, Failure, Seq[Action]]](ZIO.succeed(Seq.empty))
-    updatedTimeMachineContent <- subscriptionRef.updateAndGetZIO(u => {
-      u.reduce(action, playerId) match
+    updatedTimeMachineContent <- subscriptionRef.updateAndGetZIO(tmContent => {
+      tmContent.reduce(action, playerId) match
         case Left(failure) => ZIO.fail(failure)
         case Right((u2, effect)) => for {
           _ <- effectRef.set(effect)
@@ -37,14 +38,27 @@ case class TimeMachineStateManager(
           ))
       })
     } yield ()
+
+  override val actionsAndInvokers: IO[Nothing, ActionStackInTransit] =
+    subscriptionRef.get.map(_.actionStackInTransit)
+  
 }
 
 object TimeMachineStateManager {
-  val layer: ZLayer[Seq[BackendGameProps[_,_]], Nothing, TimeMachine] = ZLayer {
+  val layer: ZLayer[Seq[BackendGameProps[_,_]], Nothing, TimeMachineStateManager] = ZLayer {
     for {
       games <- ZIO.service[Seq[BackendGameProps[_,_]]]
       u = Universe(games)
       uref <- SubscriptionRef.make(TimeMachineContent(u))
+    } yield TimeMachineStateManager(uref)
+  }
+
+  val layerFromRecoveredTmContent: ZLayer[Seq[BackendGameProps[_, _]] & TimeMachineContent, Nothing, TimeMachineStateManager] = ZLayer {
+    for {
+      games <- ZIO.service[Seq[BackendGameProps[_, _]]]
+      recoveredTmContent <- ZIO.service[TimeMachineContent]
+      _ = assert(recoveredTmContent.latestUniverse.supportedGames.toSet == games.toSet)
+      uref <- SubscriptionRef.make(recoveredTmContent)
     } yield TimeMachineStateManager(uref)
   }
 }

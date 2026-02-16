@@ -3,8 +3,9 @@ package gbge.backend
 import gbge.backend.endpoints_and_aspects.Aspects
 import gbge.backend.gameroutes.{GameRoutes, StaticRoutes, TMRoutes}
 import gbge.backend.models.{Player, Universe}
-import gbge.backend.services.state_manager.TimeMachineStateManager
+import gbge.backend.services.state_manager.{TimeMachineContent, TimeMachineStateManager}
 import gbge.backend.services.{MainService, MainServiceLive, SequentialTokenGenerator}
+import gbge.shared.tm.ActionStackInTransit
 import zio.http.{Route, Routes, Server}
 import zio.stream.SubscriptionRef
 import zio.{IO, Ref, Scope, ZEnvironment, ZIO, ZLayer}
@@ -13,15 +14,40 @@ import java.net.InetSocketAddress
 
 case class GenericLauncher(games: Seq[BackendGameProps[_,_]]) {
 
-  val launch: ZIO[Scope & GameConfig, Any, Unit] = for {
+  val launch: ZIO[Scope & GameConfig & Option[String], Any, Unit] = for {
     gameConfig <- ZIO.service[GameConfig]
+    optionalFileNameForRecovery <- ZIO.service[Option[String]]
     universeRef: SubscriptionRef[Universe] <- SubscriptionRef.make(Universe(Seq.empty)) // first value does not matter
-    tmStateManager <- TimeMachineStateManager.layer.build.provideSomeEnvironment[Scope](scope => scope ++ ZEnvironment(games))
-    _ <- tmStateManager.get.universeStream.foreach(u => universeRef.set(u)).fork
-    tokenGenerator <- SequentialTokenGenerator.layer.build.provideSomeLayer(ZLayer.succeed(100))
-    mainService <- MainServiceLive.layer.build.provideSomeEnvironment[Scope](scope => scope ++ tmStateManager ++ tokenGenerator.add(games))
 
-    routesWithDepsProvided = createRoutes(gameConfig.devStaticRouteOptions).provideEnvironment(ZEnvironment(universeRef) ++ mainService ++ tmStateManager)
+    optionalTmContent <- ZIO.when(optionalFileNameForRecovery.isDefined)(reconstructTmContentFromFile(optionalFileNameForRecovery.get))
+
+    tmStateManager <- optionalTmContent match {
+      case Some(timeMachineContent: TimeMachineContent) =>
+        for {
+          _ <- ZIO.log(s"The recovered tm content: [$timeMachineContent]")
+          _ <- universeRef.set(timeMachineContent.latestUniverse)
+          result <- TimeMachineStateManager.layerFromRecoveredTmContent.build.provideSomeEnvironment[Scope](scope =>
+            scope ++ ZEnvironment(games).add(timeMachineContent))
+        } yield result.get
+      case None =>
+        ZIO.log("nothing was recovered...") *>
+        TimeMachineStateManager.layer.build.provideSomeEnvironment[Scope](scope => scope ++ ZEnvironment(games)).map(_.get)
+    }
+
+    _ <- tmStateManager.universeStream.foreach(u => universeRef.set(u)).fork
+
+    u <- universeRef.get
+    tokenValueZero: Int = {
+      if (u.players.isEmpty)
+        100
+      else
+        u.players.keys.map(_.toInt).max
+    } // Will require some redesign when support for non-sequential TokenGenerator will be added
+    _ <- ZIO.log("Token value 0: " + tokenValueZero)
+    tokenGenerator <- SequentialTokenGenerator.layer.build.provideSomeLayer(ZLayer.succeed(tokenValueZero))
+    mainService <- MainServiceLive.layer.build.provideSomeEnvironment[Scope](scope => scope.add(tmStateManager) ++ tokenGenerator.add(games))
+
+    routesWithDepsProvided = createRoutes(gameConfig.devStaticRouteOptions).provideEnvironment(ZEnvironment(universeRef).add(tmStateManager) ++ mainService)
 
     socketAddress = gameConfig.host.fold(new InetSocketAddress(gameConfig.port))(host =>
       new InetSocketAddress(host, gameConfig.port))
@@ -32,6 +58,17 @@ case class GenericLauncher(games: Seq[BackendGameProps[_,_]]) {
     _ <- Server.serve(routesWithDepsProvided).provide(serverLayer)
     _ <- ZIO.never
   } yield ()
+
+  private def reconstructTmContentFromFile(fileName: String): IO[Unit, TimeMachineContent] = for {
+    _ <- ZIO.log(s"Attempting to rebuildActionStack from file [$fileName]")
+    path = os.pwd / fileName
+    raw = os.read(path)
+    actionStackInTransit = ActionStackInTransit.jsonCodec.decoder.decodeJson(raw).getOrElse(???)
+    _ <- ZIO.log(s"decoded actionStackInTransit:\n$actionStackInTransit")
+  } yield TimeMachineContent.rebuildFromActionStack(
+    games,
+    actionStackInTransit.toActionEntries()(games.map(_.actionCodec).toList).map(aip => (aip.action, aip.invoker))
+  )
 
   private def printStartUpMessage(config: GameConfig): IO[Nothing, Unit] = (for {
     _ <- zio.Console.printLine("**************************************************************")
@@ -44,13 +81,21 @@ case class GenericLauncher(games: Seq[BackendGameProps[_,_]]) {
     _ <- zio.Console.printLine(s"\t Visit [$address] to join the game.")
     _ <- zio.Console.printLine(s"\t Visit [$address/s] to display the game board.")
     _ <- zio.Console.printLine("**************************************************************")
-  } yield ()).either.unit
+  } yield ()).ignore
 
 
   private def createRoutes(optionalDevStaticRouteOptions: Option[StaticRoutes.DevStaticRouteOptions] = None) = {
     val staticRoutes = StaticRoutes(optionalDevStaticRouteOptions)
 
     val gameSpecificActionRoutes = Routes.fromIterable(games.map(GameRoutes.generateGameSpecificActionRoute))
+    
+    val developmentRoutes = Routes(
+      TMRoutes.resetRoute,
+      TMRoutes.actionHistoryRoute,
+      TMRoutes.getTmSpectatorStateAtTimeRoute,
+      TMRoutes.getTmStateAtTimeForPlayerRoute,
+      TMRoutes.saveRoute
+    )
 
     val routesWithAuthentication: Routes[MainService & SubscriptionRef[Universe], Nothing] =
       (Routes(
@@ -59,8 +104,8 @@ case class GenericLauncher(games: Seq[BackendGameProps[_,_]]) {
         GameRoutes.sseRouteWithAuthentication,
       ) ++ gameSpecificActionRoutes) @@ Aspects.tokenExtractorAspect
 
-    Routes(TMRoutes.resetRoute, GameRoutes.joinRoute, GameRoutes.sseRoute, GameRoutes.fuRoute)
-      ++ routesWithAuthentication ++ staticRoutes.allStaticRoutes
+    Routes(GameRoutes.joinRoute, GameRoutes.sseRoute, GameRoutes.fuRoute)
+      ++ routesWithAuthentication ++ staticRoutes.allStaticRoutes ++ developmentRoutes
   }
 
 }

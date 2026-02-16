@@ -1,9 +1,9 @@
 package gbge.ui.state.screenstates
 
-import gbge.shared.actions.SelectGame
 import gbge.client.*
-import gbge.shared.{FrontendPlayer, FrontendUniverse}
-import gbge.ui.eps.player.{PlayerEvent, ScreenEvent}
+import gbge.shared.FrontendUniverse
+import gbge.shared.actions.SelectGame
+import gbge.ui.eps.player.ScreenEvent
 import gbge.ui.state.OfflineState
 import uiglue.Event
 import zio.{UIO, ZIO}
@@ -16,7 +16,7 @@ case object SelectGameEvent extends WelcomeScreenEvent
 
 case class WelcomeScreenState(index: Int = 0) extends OfflineState {
 
-  implicit def convert (welcomeScreenState: WelcomeScreenState): (WelcomeScreenState, UIO[List[Event]]) =
+  implicit def convert(welcomeScreenState: WelcomeScreenState): (WelcomeScreenState, UIO[List[Event]]) =
     (welcomeScreenState, ZIO.succeed(List.empty))
 
   override def handleScreenEvent(sa: ScreenEvent, fu: Option[FrontendUniverse], playerId: Option[Int]): (WelcomeScreenState, UIO[List[Event]]) = sa match {

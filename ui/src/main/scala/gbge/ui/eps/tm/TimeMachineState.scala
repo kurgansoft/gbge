@@ -1,11 +1,9 @@
 package gbge.ui.eps.tm
 
-import gbge.client.*
+import gbge.shared.{FrontendPlayer, JoinResponse}
 import gbge.shared.tm.*
-import gbge.shared.{ClientTimeMachine, FrontendPlayer}
-import gbge.ui.eps.player.ClientState
+import gbge.ui.eps.player.{ClientState, JoinResponseEvent}
 import gbge.ui.eps.spectator.{CONNECTED, SpectatorState}
-import org.scalajs.dom.WebSocket
 import uiglue.EventLoop.EventHandler
 import uiglue.{Event, UIState}
 import zio.*
@@ -15,16 +13,22 @@ import scala.util.Try
 
 case class TimeMachineState(
                              status: DataFetchStatus = LOADING,
-                             timeMachine: ClientTimeMachine = ClientTimeMachine(),
+                             actionsAndInvokers: List[ActionInvokerAndPlayers] = List.empty,
                              selectedAction: Option[Int] = None,
                              selectedPerspective: Option[Perspective] = None,
                              componentDisplayMode: ComponentDisplayMode = PPRINT,
-                             selectedClientState: Either[CSState, UIState[Event, Any]] = Left(CS_NOT_SELECTED),
+                             selectedClientState: CSState = CS_NOT_SELECTED,
                              portalId: Option[Int] = None,
-                             portalSocket: Option[WebSocket] = None
                       ) extends UIState[TMClientEvent, Any] {
 
-  val stringToPersist: String = {
+  private lazy val playersOfSelection: List[FrontendPlayer] = {
+    selectedAction.map({
+      case number if number > 0 && number <= actionsAndInvokers.size => actionsAndInvokers(number - 1).players
+      case _ => List.empty
+    }).getOrElse(List.empty)
+  }
+
+  lazy val stringToPersist: String = {
     val portalIdAsString: String = portalId.map(_.toString).getOrElse("")
     val action: String = selectedAction.map(_.toString).getOrElse("")
     val perspectiveString: String = selectedPerspective.map(_.id.toString).getOrElse("")
@@ -37,99 +41,93 @@ case class TimeMachineState(
 
   lazy val getPortalCoordinates: PortalCoordinates = {
     assert(portalId.isDefined)
-    PortalCoordinates(portalId.get, selectedAction, selectedPerspective)
+    PortalCoordinates(portalId.getOrElse(150), selectedAction, selectedPerspective)
   }
 
-  lazy val currentSelectionAvailableInTheCache: Boolean = {
-    if (selectedPerspective.isEmpty || selectedAction.isEmpty) {
-      true
-    } else {
-      timeMachine.stateCache.get(selectedAction.get, selectedPerspective.get).isDefined
-    }
-  }
+//  lazy val currentSelectionAvailableInTheCache: Boolean = {
+//    if (selectedPerspective.isEmpty || selectedAction.isEmpty) {
+//      true
+//    } else {
+//      timeMachine.stateCache.get(selectedAction.get, selectedPerspective.get).isDefined
+//    }
+//  }
+//
+//  lazy val getPlayersForSelectedAction: Option[List[FrontendPlayer]] = {
+//    if (selectedAction.isDefined)
+//      this.timeMachine.stateCache.get(selectedAction.get, SpectatorPerspective).map(_.players)
+//    else
+//      None
+//  }
 
-  lazy val getPlayersForSelectedAction: Option[List[FrontendPlayer]] = {
-    if (selectedAction.isDefined)
-      this.timeMachine.stateCache.get(selectedAction.get, SpectatorPerspective).map(_.players)
-    else
-      None
-  }
+//  lazy val selectedPerspectiveIsValid: Boolean = {
+//    if (selectedAction.isEmpty || selectedPerspective.isEmpty || selectedPerspective.contains(SpectatorPerspective))
+//      true
+//    else {
+//      val spectatorPerspective = timeMachine.stateCache.get(selectedAction.get, selectedPerspective.get)
+//      if (spectatorPerspective.isEmpty) {
+//        true
+//      } else {
+//        spectatorPerspective.map(_.players.map(_.id))
+//          .forall(_.exists(_ == selectedPerspective.get.id))
+//      }
+//    }
+//  }
 
-  lazy val selectedPerspectiveIsValid: Boolean = {
-    if (selectedAction.isEmpty || selectedPerspective.isEmpty || selectedPerspective.contains(SpectatorPerspective))
-      true
-    else {
-      val spectatorPerspective = timeMachine.stateCache.get(selectedAction.get, selectedPerspective.get)
-      if (spectatorPerspective.isEmpty) {
-        true
-      } else {
-        spectatorPerspective.map(_.players.map(_.id))
-          .forall(_.exists(_ == selectedPerspective.get.id))
-      }
-    }
-  }
-
-  lazy val transformTMState: TimeMachineState = {
-    val conflictsResolved = selectedPerspective match {
-      case Some(PlayerPerspective(perspectiveId)) => {
-        if (getPlayersForSelectedAction.isDefined && !getPlayersForSelectedAction.get.exists(_.id == perspectiveId)) {
-          this.copy(selectedPerspective = None)
-        } else {
-          this
-        }
-      }
-      case _ => this
-    }
-    conflictsResolved.copy(selectedClientState = conflictsResolved.calculateClientState)
-  }
+//  lazy val transformTMState: TimeMachineState = {
+//    val conflictsResolved = selectedPerspective match {
+//      case Some(PlayerPerspective(perspectiveId)) => {
+//        if (getPlayersForSelectedAction.isDefined && !getPlayersForSelectedAction.get.exists(_.id == perspectiveId)) {
+//          this.copy(selectedPerspective = None)
+//        } else {
+//          this
+//        }
+//      }
+//      case _ => this
+//    }
+//    conflictsResolved.copy(selectedClientState = conflictsResolved.calculateClientState)
+//  }
 
   // Populates the selectedClientState field if it is possible from the cache
-  private lazy val calculateClientState: Either[CSState, UIState[Event, Any]] = {
-    if (selectedAction.isDefined && selectedPerspective.isDefined) {
-      val players = getPlayersForSelectedAction
-      val player: Option[FrontendPlayer] = {
-        selectedPerspective match {
-          case Some(PlayerPerspective(id)) => players.getOrElse(List.empty).find(_.id == id)
-          case _ => None
-        }
-      }
-      if (timeMachine.stateCache.get(selectedAction.get, selectedPerspective.get).isDefined) {
-        val fu = timeMachine.stateCache(selectedAction.get, selectedPerspective.get)
-        if (player.isDefined) {
-          val clientState = ClientState()
-//          val clientState = ClientState().processEvent(NewPlayerEvent(player.get))._1
-//            .handleNewFU(fu)._1
-          ???
-//          Right(clientState)
-        } else {
-          val spectatorState = SpectatorState(frontendUniverse = Some(fu), CONNECTED).processEvent(NewFU(fu))._1
-          Right(spectatorState)
-        }
-      } else {
-        Left(CS_LOADING)
-      }
-    } else {
-      Left(CS_NOT_SELECTED)
-    }
-  }
+//  private lazy val calculateClientState: Either[CSState, UIState[Event, Any]] = {
+//    if (selectedAction.isDefined && selectedPerspective.isDefined) {
+//      val players = getPlayersForSelectedAction
+//      val player: Option[FrontendPlayer] = {
+//        selectedPerspective match {
+//          case Some(PlayerPerspective(id)) => players.getOrElse(List.empty).find(_.id == id)
+//          case _ => None
+//        }
+//      }
+//      if (timeMachine.stateCache.get(selectedAction.get, selectedPerspective.get).isDefined) {
+//        val fu = timeMachine.stateCache(selectedAction.get, selectedPerspective.get)
+//        if (player.isDefined) {
+//          val clientState = ClientState()
+////          val clientState = ClientState().processEvent(NewPlayerEvent(player.get))._1
+////            .handleNewFU(fu)._1
+//          ???
+////          Right(clientState)
+//        } else {
+//          val spectatorState = SpectatorState(frontendUniverse = Some(fu), CONNECTED).processEvent(NewFU(fu))._1
+//          Right(spectatorState)
+//        }
+//      } else {
+//        Left(CS_LOADING)
+//      }
+//    } else {
+//      Left(CS_NOT_SELECTED)
+//    }
+//  }
 
-  val neededEffect: UIO[List[TMClientEvent]] = {
-    if (selectedAction.isDefined && selectedAction.get >= 0 && selectedAction.get <= timeMachine.actions.size) {
-      if (timeMachine.stateCache.get(selectedAction.get, SpectatorPerspective).isEmpty)
-        TMEffects.retrieveTMState(selectedAction.get, SpectatorPerspective)
-      else if (selectedPerspective.isDefined && timeMachine.stateCache.get(selectedAction.get, selectedPerspective.get).isEmpty)
-        TMEffects.retrieveTMState(selectedAction.get, selectedPerspective.get)
-      else
-        ZIO.succeed(List.empty)
-    } else
+  lazy val neededEffect: UIO[List[TMClientEvent]] =
+    if (selectedAction.isDefined && selectedAction.get >= 0 && selectedAction.get <= actionsAndInvokers.size)
+      TMEffects.retrieveTMState(selectedAction.get, selectedPerspective.getOrElse(SpectatorPerspective))
+    else
       ZIO.succeed(List.empty)
-  }
 
   implicit def implicitConversion(state: TimeMachineState): (TimeMachineState, EventHandler[TMClientEvent] => UIO[List[TMClientEvent]]) =
     (state, _ => ZIO.succeed(List.empty))
 
-  def sequentiallyCombineEffects[E <: Event](effects : EventHandler[E] => UIO[List[E]]*): EventHandler[E] => UIO[List[E]] = {
-    effects.foldLeft(eh => effects.head(eh))((acc, v) => eh => acc(eh).zipWith(v(eh))(_.appendedAll(_)))
+  private def sequentiallyCombineEffects[E <: Event](effects : EventHandler[E] => UIO[List[E]]*): EventHandler[E] => UIO[List[E]] = {
+    effects.reduceLeft((acc, v) => eh => acc(eh).zipWith(v(eh))(_.appendedAll(_)))
   }
 
   override def processEvent(event: TMClientEvent): (TimeMachineState, EventHandler[TMClientEvent] => UIO[List[TMClientEvent]]) = {
@@ -137,27 +135,41 @@ case class TimeMachineState(
       event match {
         case Start =>
           (this, TMEffects.recoverFromHash)
-        case TimeMachineHaveArrived(tm) =>
-          this.copy(timeMachine = tm, status = LOADED)
-        case TMStateArrived(number, perspective, fu) => {
-          val temp = this.copy(timeMachine = timeMachine.copy(
-            stateCache = timeMachine.stateCache.updated((number, perspective), fu)
-          )).transformTMState
-          (temp, temp.neededEffect)
-        }
+        case ActionsHaveArrived(actionsAndInvokers) =>
+          this.copy(status = LOADED, actionsAndInvokers = actionsAndInvokers)
+//        case TimeMachineHaveArrived(tm) =>
+//          this.copy(timeMachine = tm, status = LOADED)
+        case TMStateArrived(number, SpectatorPerspective, fu) =>
+          this.copy(selectedClientState = CSState_Loaded(SpectatorState(Some(fu), CONNECTED)))
+        case TMStateArrived(number, PlayerPerspective(playerId), fu) =>
+          val player = fu.players.find(_.id == playerId).get
+          val clientState: ClientState = ClientState(Some(fu), Some((playerId, player.name))).processEvent(JoinResponseEvent(JoinResponse(player.id, "???")))._1
+          this.copy(selectedClientState = CSState_Loaded(
+            clientState
+          ))
         // Effects to potentially execute: PersistSelection, retrieveTMState(Spectator), retrieveTMState(selectedPerspective)
-        case ActionSelected(selected) => {
-          if (status == LOADED && selected >= 0 && selected <= timeMachine.actions.size) {
-            val newState = this.copy(selectedAction = Some(selected)).transformTMState
-            (newState, newState.neededEffect)
+        case ActionSelected(selected) =>
+          if (status == LOADED && selected >= 0 && selected <= actionsAndInvokers.size && !this.selectedAction.contains(selected)) {
+            val step1 = this.copy(selectedAction = Some(selected))
+            val newState = selectedPerspective match {
+              case None | Some(SpectatorPerspective) =>
+                step1
+              case Some(PlayerPerspective(playerId)) if step1.playersOfSelection.exists(_.id == playerId) =>
+                step1
+              case _ =>
+                step1.copy(selectedPerspective = None, selectedClientState = CS_NOT_SELECTED)
+            }
+            if (newState.selectedAction != this.selectedAction && newState.selectedPerspective.nonEmpty)
+              (newState, TMEffects.retrieveTMState(newState.selectedAction.get, newState.selectedPerspective.get))
+            else
+              newState
           } else {
             this
           }
-        }
-        case PerspectiveSelected(selection) => {
+        case PerspectiveSelected(perspective) => {
           if (selectedAction.isDefined) {
-            val newState = this.copy(selectedPerspective = Some(selection)).transformTMState
-            (newState, newState.neededEffect)
+            val newState = this.copy(selectedPerspective = Some(perspective))
+            (newState, TMEffects.retrieveTMState(newState.selectedAction.get, perspective))
           } else {
             this
           }
@@ -169,7 +181,7 @@ case class TimeMachineState(
           newState
         }
         case TMMessageContainer(tmMessage) => {
-          import gbge.shared.tm._
+          import gbge.shared.tm.*
           tmMessage match {
             case PortalId(id) => this.copy(portalId = Some(id))
             case Update => this
@@ -179,23 +191,25 @@ case class TimeMachineState(
         case ResetTmToNumber(number) =>
           (this, TMEffects.resetTmToNumber(number))
         case TmGotShrunk(number) =>
-          this.copy(timeMachine = this.timeMachine.take(number))
-        case RegisterWebSocket(webSocket) =>
-          this.copy(portalSocket = Some(webSocket))
+          this.copy(actionsAndInvokers = this.actionsAndInvokers.take(number))
         case RecoveredHash(hash) =>
+          println(s"recovering from hash [$hash]")
           val (portalId, actionNumber, perspective, mode) = TimeMachineState.calculateParamsFromHash(hash)
           val newState = this.copy(portalId = portalId, selectedAction = actionNumber,
             selectedPerspective = perspective,
-            componentDisplayMode = if (mode) COMPONENT else PPRINT).transformTMState
-          (newState, sequentiallyCombineEffects(TMEffects.retrieveTimeMachine, TMEffects.createOrReusePortal(newState.portalId), TMEffects.justReturnAnEvent(RetrieveMissingStates)))
-        case RetrieveMissingStates =>
-          val transformedState = this.transformTMState
-          (transformedState, transformedState.neededEffect)
+            componentDisplayMode = if (mode) COMPONENT else PPRINT)
+//          (newState, sequentiallyCombineEffects(TMEffects.retrieveTimeMachine, TMEffects.createOrReusePortal(newState.portalId), TMEffects.justReturnAnEvent(RetrieveMissingStates)))
+          (newState, TMEffects.retrieveActionStack)
+//        case RetrieveMissingStates =>
+//          val transformedState = this.transformTMState
+//          (transformedState, transformedState.neededEffect)
         case EventFromSelectedPerspective(event) =>
-          if (selectedClientState.isRight) {
-            this.copy(selectedClientState = selectedClientState.map(_.processEvent(event)._1))
-          } else
-            this
+          selectedClientState match {
+            case CSState_Loaded(uiState) =>
+              val newUiState = uiState.processEvent(event)._1
+              this.copy(selectedClientState = CSState_Loaded(newUiState))
+            case _ => this
+          }
         case _ => this
       }
     if (x._1.stringToPersist == this.stringToPersist) {

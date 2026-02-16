@@ -3,7 +3,10 @@ package gbge.shared.actions
 import zio.json._
 import zio.schema.{DeriveSchema, Schema}
 
-sealed trait GeneralAction extends Action
+sealed trait GeneralAction extends Action {
+  override def convertToJson(): String =
+    this.toJson
+}
 
 object GeneralAction {
   implicit val codec: JsonCodec[GeneralAction] =

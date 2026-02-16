@@ -11,8 +11,9 @@ case class StaticRoutes(devStaticRouteOptions: Option[DevStaticRouteOptions] = N
 
   private val redirect1: Route[Any, Nothing] = Method.GET / "" -> Handler.succeed(Response.seeOther(url"index.html"))
   private val redirect2: Route[Any, Nothing] = Method.GET / "s" -> Handler.succeed(Response.seeOther(url"spectator.html"))
+  private val tmRedirect: Route[Any, Nothing] = Method.GET / "tm" -> Handler.succeed(Response.seeOther(url"timemachine.html"))
 
-  private val mainJSHandler: Handler[Any, Response, Any, Response] =
+  private val mainJSHandler: Handler[Any, Response, Request, Response] =
     if (devStaticRouteOptions.isEmpty)
       Handler.fromResource("ui-opt.js", Charsets.Utf8).mapError(_ => Response.notFound)
     else {
@@ -29,13 +30,14 @@ case class StaticRoutes(devStaticRouteOptions: Option[DevStaticRouteOptions] = N
       resourceRoutes
     else {
       val middlewares = devStaticRouteOptions.get.staticFileFolders.map({ case (pathPrefix, filePath) =>
+        println(s"serving path [$filePath] with prefix [$pathPrefix]")
         Middleware.serveDirectory(Path(pathPrefix), new File(filePath))
       })
       middlewares.foldLeft(resourceRoutes)((routesAcc, middleware) => routesAcc @@ middleware)
     }
   }
   
-  val allStaticRoutes = Routes(redirect1, redirect2, mainJSRoute) ++ staticAssetsRoute
+  val allStaticRoutes = Routes(redirect1, redirect2, mainJSRoute, tmRedirect) ++ staticAssetsRoute
 
 }
 

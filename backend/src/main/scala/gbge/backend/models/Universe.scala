@@ -350,8 +350,8 @@ case class Universe(supportedGames: Seq[BackendGameProps[_,_]],
   }
 //
   def getFrontendUniverseForPlayer(playerId: Option[Int] = None): FrontendUniverse = {
-//    val role: Option[Int] = playerId.flatMap(pi => players.find(_.id == pi)).flatMap(_.role)
-    FrontendUniverse(selectedGame, game.map(_.toFrontendGame(None)), this.players.values.map(_.toFrontendPlayer()).toList.sortBy(_.id))
+    val role: Option[Int] = playerId.flatMap(pi => players.find(_._2.id == pi)).flatMap(_._2.role)
+    FrontendUniverse(selectedGame, game.map(_.toFrontendGame(role)), this.players.values.map(_.toFrontendPlayer()).toList.sortBy(_.id))
   }
 //
 //  def getPlayerWithToken(token: String): Option[Player] = ??? 

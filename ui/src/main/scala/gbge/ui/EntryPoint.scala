@@ -65,13 +65,14 @@ trait EntryPoint {
   @JSExport
   def timeMachineEntryPoint(div: Div): Unit = {
     val state = TimeMachineState()
-    val renderFunction: (UIState[TMClientEvent, Any], EventHandler[TMClientEvent]) => Unit =
+    val renderFunction: (UIState[TMClientEvent, Any], EventHandler[TMClientEvent]) => Unit = {
       (state, eventHandler) => {
         val s = state.asInstanceOf[TimeMachineState]
         gbge.ui.eps.tm.Displayer
           .tmComponent(s, eventHandler)
           .renderIntoDOM(div)
       }
+    }
 
     val loop = EventLoop.createLoop(state, renderFunction, List(gbge.ui.eps.tm.Start))
 
