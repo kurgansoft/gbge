@@ -6,7 +6,8 @@ import zio.{Config, IO, ZIO}
 case class GameConfig(
     host: Option[String] = None,
     port: Int = 8080,
-    devStaticRouteOptions: Option[DevStaticRouteOptions] = None
+    devStaticRouteOptions: Option[DevStaticRouteOptions] = None,
+    timeMachineEnabled: Boolean = false
 )
 
 object GameConfig {

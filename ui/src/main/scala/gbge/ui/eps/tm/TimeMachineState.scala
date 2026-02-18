@@ -137,8 +137,8 @@ case class TimeMachineState(
           (this, TMEffects.recoverFromHash)
         case ActionsHaveArrived(actionsAndInvokers) =>
           this.copy(status = LOADED, actionsAndInvokers = actionsAndInvokers)
-//        case TimeMachineHaveArrived(tm) =>
-//          this.copy(timeMachine = tm, status = LOADED)
+        case TimeMachineRetrievalFailed =>
+          this.copy(status = LOADING_FAILED)
         case TMStateArrived(number, SpectatorPerspective, fu) =>
           this.copy(selectedClientState = CSState_Loaded(SpectatorState(Some(fu), CONNECTED)))
         case TMStateArrived(number, PlayerPerspective(playerId), fu) =>

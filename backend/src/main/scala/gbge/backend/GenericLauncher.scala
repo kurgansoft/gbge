@@ -47,7 +47,7 @@ case class GenericLauncher(games: Seq[BackendGameProps[_,_]]) {
     tokenGenerator <- SequentialTokenGenerator.layer.build.provideSomeLayer(ZLayer.succeed(tokenValueZero))
     mainService <- MainServiceLive.layer.build.provideSomeEnvironment[Scope](scope => scope.add(tmStateManager) ++ tokenGenerator.add(games))
 
-    routesWithDepsProvided = createRoutes(gameConfig.devStaticRouteOptions).provideEnvironment(ZEnvironment(universeRef).add(tmStateManager) ++ mainService)
+    routesWithDepsProvided = createRoutes(gameConfig.devStaticRouteOptions, gameConfig.timeMachineEnabled).provideEnvironment(ZEnvironment(universeRef).add(tmStateManager) ++ mainService)
 
     socketAddress = gameConfig.host.fold(new InetSocketAddress(gameConfig.port))(host =>
       new InetSocketAddress(host, gameConfig.port))
@@ -84,7 +84,7 @@ case class GenericLauncher(games: Seq[BackendGameProps[_,_]]) {
   } yield ()).ignore
 
 
-  private def createRoutes(optionalDevStaticRouteOptions: Option[StaticRoutes.DevStaticRouteOptions] = None) = {
+  private def createRoutes(optionalDevStaticRouteOptions: Option[StaticRoutes.DevStaticRouteOptions] = None, timeMachineEnabled: Boolean) = {
     val staticRoutes = StaticRoutes(optionalDevStaticRouteOptions)
 
     val gameSpecificActionRoutes = Routes.fromIterable(games.map(GameRoutes.generateGameSpecificActionRoute))
@@ -104,8 +104,13 @@ case class GenericLauncher(games: Seq[BackendGameProps[_,_]]) {
         GameRoutes.sseRouteWithAuthentication,
       ) ++ gameSpecificActionRoutes) @@ Aspects.tokenExtractorAspect
 
-    Routes(GameRoutes.joinRoute, GameRoutes.sseRoute, GameRoutes.fuRoute)
-      ++ routesWithAuthentication ++ staticRoutes.allStaticRoutes ++ developmentRoutes
+    val routes = Routes(GameRoutes.joinRoute, GameRoutes.sseRoute, GameRoutes.fuRoute)
+      ++ routesWithAuthentication ++ staticRoutes.allStaticRoutes
+    
+    if (timeMachineEnabled)
+      routes ++ developmentRoutes
+    else 
+      routes
   }
 
 }

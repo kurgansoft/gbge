@@ -23,7 +23,8 @@ object Launcher extends ZIOAppDefault {
 //  val config: GameConfig = GameConfig(
 //    devStaticRouteOptions = Some(DevStaticRouteOptions(
 //      "absolute_path_to_ui-fastopt.js",
-//    ))
+//    )),
+//    timeMachineEnabled = true
 //  )
   
   override def run: ZIO[Scope & ZIOAppArgs, Any, Unit] = for {
