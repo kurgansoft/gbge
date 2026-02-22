@@ -17,11 +17,7 @@ lazy val common = crossProject(JSPlatform, JVMPlatform).in(file("common")).
       "com.softwaremill.sttp.client4" %%% "zio-json" % sttpVersion,
     )
   )
-  .jvmSettings(
-    target := file("common/target/jvm")
-  )
   .jsSettings(
-    target := file("common/target/js"),
     scalaJSUseMainModuleInitializer := false
    )
 
