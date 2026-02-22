@@ -20,12 +20,17 @@ case class MainServiceLive(tokenGenerator: TokenGenerator,
     provideTokenAction = action.head.asInstanceOf[ProvideToken]
 
     pair <- stateManager.update(provideTokenAction, None).provideEnvironment(ZEnvironment(tokenGenerator))
-    (updatedUniverse, effect) = pair
+    (updatedUniverse, _) = pair
     token = updatedUniverse.players.find(pair => pair._2.id == playerId).map(_._1).get
   } yield JoinResponse(playerId, token)
 
   override def handleAction(action: Action, userId: Int): IO[Failure, Unit] = for {
-    _ <- stateManager.update(action, Some(userId))
+    pair <- stateManager.update(action, Some(userId))
+    (_, effect) = pair
+    actionMaybe <- effect.provideEnvironment(ZEnvironment(tokenGenerator))
+    _ <- ZIO.when(actionMaybe.isDefined)(
+      stateManager.update(actionMaybe.get, Some(userId))
+    )
   } yield ()
 }
 

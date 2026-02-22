@@ -25,23 +25,24 @@ case class Universe(supportedGames: Seq[BackendGameProps[_,_]],
                     nextPlayerId: Int = 1) {
 
 //  def reduceJoin(name: String): Either[String, (Int, Universe)] = {
-  private def reduceJoin(name: String): Either[Failure, (Universe, ZIO[TokenGenerator, Failure, Seq[Action]])] = {
+  private def reduceJoin(name: String): Either[Failure, (Universe, ZIO[TokenGenerator, Nothing, Option[Action]])] = {
     candidate match
       case Some(_) => Left(GeneralFailure("join is already in progress"))
       case None =>
         if (players.isEmpty)
           Right((
             this.copy(candidate = Some(Player(nextPlayerId, name, isAdmin = true))),
-            ZIO.serviceWithZIO[TokenGenerator](_.generateToken).map(token => Seq(ProvideToken(token)))
+            ZIO.serviceWithZIO[TokenGenerator](_.generateToken).map(token => Some(ProvideToken(token)))
           ))
         else if (players.size < Universe.MAX_PLAYER_NUMBER) {
           if (players.exists(_._2.name.equalsIgnoreCase(name)))
             Left(GeneralFailure("A player with a similar name has already joined."))
-          else
+          else {
             Right((
               this.copy(candidate = Some(Player(nextPlayerId, name))),
-              ZIO.serviceWithZIO[TokenGenerator](_.generateToken).map(token => Seq(ProvideToken(token)))
+              ZIO.serviceWithZIO[TokenGenerator](_.generateToken).map(token => Some(ProvideToken(token)))
             ))
+          }
         }
         else
           Left(GeneralFailure("A player with a similar name has already joined."))
@@ -73,7 +74,7 @@ case class Universe(supportedGames: Seq[BackendGameProps[_,_]],
 //    (nextPlayerId + 100).toString + randomSuffix
 //  }
 
-  def reduce(action: Action, playerId: Option[Int] = None): Either[Failure, (Universe, ZIO[TokenGenerator, Failure, Seq[Action]])] = {
+  def reduce(action: Action, playerId: Option[Int] = None): Either[Failure, (Universe, ZIO[TokenGenerator, Nothing, Option[Action]])] = {
     val player: Option[Player] = playerId.flatMap(id => getPlayerFromId(id))
     action match {
       case Join(name) => reduceJoin(name)
@@ -92,10 +93,10 @@ case class Universe(supportedGames: Seq[BackendGameProps[_,_]],
     }
   }
 
-  implicit def conversion1(universe: Universe): Either[Failure, (Universe, IO[Failure, Seq[Action]])] = Right(universe, ZIO.succeed(Seq.empty))
-  implicit def conversion2(failure: Failure): Either[Failure, (Universe, IO[Failure, Seq[Action]])] = Left(failure)
+  implicit def conversion1(universe: Universe): Either[Failure, (Universe, IO[Nothing, Option[Action]])] = Right(universe, ZIO.none)
+  implicit def conversion2(failure: Failure): Either[Failure, (Universe, IO[Nothing, Option[Action]])] = Left(failure)
 
-  private def reduceKickPlayer(playerId: Int, player: Player): Either[Failure, (Universe, IO[Failure, Seq[Action]])] = {
+  private def reduceKickPlayer(playerId: Int, player: Player): Either[Failure, (Universe, IO[Nothing, Option[Action]])] = {
      if (player.isAdmin || player.id == playerId) {
       players.find(pair => pair._2.id == playerId) match {
         case Some((tokenOfPlayerToKick, player)) if !player.isAdmin =>
@@ -117,7 +118,7 @@ case class Universe(supportedGames: Seq[BackendGameProps[_,_]],
     }
   }
 
-  private def reduceAdminAction(adminAction: AdminAction, player: Player): Either[Failure, (Universe, ZIO[TokenGenerator, Failure, Seq[Action]])]  = {
+  private def reduceAdminAction(adminAction: AdminAction, player: Player): Either[Failure, (Universe, ZIO[TokenGenerator, Nothing, Option[Action]])]  = {
     if (!player.isAdmin) {
       UnauthorizedFailure("Only an admin can execute admin actions - which you are not.")
     } else {
@@ -163,7 +164,7 @@ case class Universe(supportedGames: Seq[BackendGameProps[_,_]],
     }
   }
 
-  private def reduceGameAction(ga: GameAction, invokingPlayer: Player): Either[Failure, (Universe, IO[Failure, Seq[Action]])]= {
+  private def reduceGameAction(ga: GameAction, invokingPlayer: Player): Either[Failure, (Universe, IO[Nothing, Option[Action]])]= {
     if (game.isDefined) {
       val reduceResult = game.get.reduce(ga, invokingPlayer)
       reduceResult match
@@ -186,7 +187,7 @@ case class Universe(supportedGames: Seq[BackendGameProps[_,_]],
 //    }
 //  }
 
-  private def reduceUnassignRole(role: Int): Either[Failure, (Universe, IO[Failure, Seq[Action]])] = {
+  private def reduceUnassignRole(role: Int): Either[Failure, (Universe, IO[Nothing, Option[Action]])] = {
     this.copy(players = players.map(p => {
       if (p._2.role.contains(role)) {
         p._1 -> p._2.copy(role = None)
@@ -228,7 +229,7 @@ case class Universe(supportedGames: Seq[BackendGameProps[_,_]],
 //      (this, GeneralFailure(player.getOrElse("")))
 //  }
 
-  private def reduceSelect(gameNumber: Int): Either[Failure, (Universe, IO[Failure, Seq[Action]])] = {
+  private def reduceSelect(gameNumber: Int): Either[Failure, (Universe, IO[Nothing, Option[Action]])] = {
     if (game.isEmpty)
       if (gameNumber >=0 && gameNumber < supportedGames.size) {
         this.copy(selectedGame = Some(gameNumber))
@@ -239,7 +240,7 @@ case class Universe(supportedGames: Seq[BackendGameProps[_,_]],
       FAIL
   }
 
-  private def reduceStart(player: Player): Either[Failure, (Universe, ZIO[TokenGenerator, Failure, Seq[Action]])]  = {
+  private def reduceStart(player: Player): Either[Failure, (Universe, ZIO[TokenGenerator, Nothing, Option[Action]])]  = {
     if (game.isEmpty && selectedGame.isDefined && selectedGame.get < supportedGames.size) {
       val result = supportedGames(selectedGame.get).start(this.players.size)
       val temp = this.copy(game = Some(result._1))
@@ -252,7 +253,7 @@ case class Universe(supportedGames: Seq[BackendGameProps[_,_]],
       FAIL
   }
 
-  private def reduceCancel(): Either[Failure, (Universe, IO[Failure, Seq[Action]])]  = {
+  private def reduceCancel(): Either[Failure, (Universe, IO[Nothing, Option[Action]])]  = {
     if (game.isEmpty)
       FAIL
     else
@@ -261,14 +262,14 @@ case class Universe(supportedGames: Seq[BackendGameProps[_,_]],
       )))
   }
 
-  private def reduceUnselectGame(): Either[Failure, (Universe, IO[Failure, Seq[Action]])] = {
+  private def reduceUnselectGame(): Either[Failure, (Universe, IO[Nothing, Option[Action]])] = {
     if (game.isDefined || selectedGame.isEmpty)
       FAIL
     else
       this.copy(selectedGame = None)
   }
 //
-  private def reduceLinkRoleToPlayer(linkRoleToPlayer: LinkRoleToPlayer, player: Player): Either[Failure, (Universe, IO[Failure, Seq[Action]])] = {
+  private def reduceLinkRoleToPlayer(linkRoleToPlayer: LinkRoleToPlayer, player: Player): Either[Failure, (Universe, IO[Nothing, Option[Action]])] = {
     lazy val executeLinking: Either[Failure, Universe] = {
       val playerId = linkRoleToPlayer.playerId
       val role = linkRoleToPlayer.role
@@ -307,7 +308,7 @@ case class Universe(supportedGames: Seq[BackendGameProps[_,_]],
   }
   
 
-  private def reduceUnlinkPlayerFromRole(unlinkPlayerFromRole: UnlinkPlayerFromRole, player: Player): Either[Failure, (Universe, IO[Failure, Seq[Action]])] = {
+  private def reduceUnlinkPlayerFromRole(unlinkPlayerFromRole: UnlinkPlayerFromRole, player: Player): Either[Failure, (Universe, IO[Nothing, Option[Action]])] = {
       val isAdmin = player.isAdmin
       val selfLinking = player.id == unlinkPlayerFromRole.playerId
       if (isAdmin || selfLinking) {
@@ -340,7 +341,7 @@ case class Universe(supportedGames: Seq[BackendGameProps[_,_]],
       }
   }
 
-  private def reduceNaturalLink(roles: List[Int]): Either[Failure, (Universe, IO[Failure, Seq[Action]])] = {
+  private def reduceNaturalLink(roles: List[Int]): Either[Failure, (Universe, IO[Nothing, Option[Action]])] = {
     val playersUpdatedWithRoles = (for (kvp <- this.players.zipWithIndex) yield
       if (kvp._2 < roles.size)
         kvp._1._1 -> kvp._1._2.copy(role = Some(roles(kvp._2)))

@@ -21,7 +21,7 @@ trait BackendGame[GA <: GameAction, FG <: FrontendGame[GA]] extends Game {
   def decreaseRoomSize(): Either[Failure, BackendGame[_ <: GA, _ <: FG]] =
     Left(GeneralFailure("Decreasing the room size is not supported in this game!"))
 
-  def reduce(gameAction: GameAction, invoker: Player): Either[Failure, (BackendGame[_ <: GA, _ <: FG], IO[Failure, Seq[Action]])]
+  def reduce(gameAction: GameAction, invoker: Player): Either[Failure, (BackendGame[_ <: GA, _ <: FG], IO[Nothing, Option[Action]])]
 
   def toFrontendGame(role: Option[Int] = None): FG
 

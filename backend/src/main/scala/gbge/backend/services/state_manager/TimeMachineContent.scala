@@ -12,13 +12,14 @@ case class TimeMachineContent(
   actionStack: Seq[(Action, Option[Int])] = Seq.empty,
   universes: Seq[Universe] = Seq.empty
 ) {
-  def reduce(action: Action, playerId: Option[Int]): Either[Failure, (TimeMachineContent, ZIO[TokenGenerator, Failure, Seq[Action]])] =
+  def reduce(action: Action, playerId: Option[Int]): Either[Failure, (TimeMachineContent, ZIO[TokenGenerator, Nothing, Option[Action]])] = {
     latestUniverse.reduce(action, playerId) match
       case Left(failure) => Left(failure)
       case Right(newUniverse, effect) => Right(this.copy(
         actionStack = actionStack.appended((action, playerId)),
         universes.appended(newUniverse)
       ), effect)
+  }
 
   lazy val latestUniverse: Universe = universes.lastOption.getOrElse(original)
 
@@ -31,7 +32,7 @@ case class TimeMachineContent(
 }
 
 object TimeMachineContent {
-  def rebuildFromActionStack(games: Seq[BackendGameProps[_,_ ]], actionStack: Seq[(Action, Option[Int])]): TimeMachineContent = {
+  def rebuildFromActionStack(games: Seq[BackendGameProps[_,_]], actionStack: Seq[(Action, Option[Int])]): TimeMachineContent = {
     val universe = Universe(games)
 
     val universes = actionStack.foldLeft(Seq(universe))({

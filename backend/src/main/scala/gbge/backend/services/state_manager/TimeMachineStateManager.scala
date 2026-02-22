@@ -11,8 +11,8 @@ import zio.stream.{SubscriptionRef, ZPipeline, ZStream}
 case class TimeMachineStateManager(
                                     subscriptionRef: SubscriptionRef[TimeMachineContent],
                                   ) extends TimeMachine  {
-  override def update(action: Action, playerId: Option[Int]): IO[Failure, (Universe, ZIO[TokenGenerator, Failure, Seq[Action]])] = for {
-    effectRef <- Ref.make[ZIO[TokenGenerator, Failure, Seq[Action]]](ZIO.succeed(Seq.empty))
+  override def update(action: Action, playerId: Option[Int]): IO[Failure, (Universe, ZIO[TokenGenerator, Nothing, Option[Action]])] = for {
+    effectRef <- Ref.make[ZIO[TokenGenerator, Nothing, Option[Action]]](ZIO.none)
     updatedTimeMachineContent <- subscriptionRef.updateAndGetZIO(tmContent => {
       tmContent.reduce(action, playerId) match
         case Left(failure) => ZIO.fail(failure)

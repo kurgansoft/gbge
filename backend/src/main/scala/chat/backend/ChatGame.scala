@@ -13,19 +13,19 @@ case class ChatGame(override val messages: List[Message] = List.empty) extends A
 
   override val noOfPlayers: Int = 6
 
-  override def reduce(gameAction: GameAction, invoker: Player): Either[Failure, (ChatGame, IO[Failure, Seq[Action]])] = {
+  override def reduce(gameAction: GameAction, invoker: Player): Either[Failure, (ChatGame, IO[Nothing, Option[Action]])] = {
     gameAction match {
       case chatAction: ChatAction => reduce0(chatAction, invoker.role)
       case _ => Left(GeneralFailure("Provided action cannot be handled by this game."))
     }
   }
 
-  def reduce0(chatAction: ChatAction, invokerRole: Option[Int]): Either[Failure, (ChatGame, IO[Failure, Seq[Action]])] = {
+  private def reduce0(chatAction: ChatAction, invokerRole: Option[Int]): Either[Failure, (ChatGame, IO[Nothing, Option[Action]])] = {
     chatAction match {
       case SendMessage(message) => {
         invokerRole match {
           case None => Left(UnauthorizedFailure("..."))
-          case Some(roleNumber) => Right((this.copy(messages = messages.appended(Message(roleNumber, message))), ZIO.succeed(Seq.empty)))
+          case Some(roleNumber) => Right((this.copy(messages = messages.appended(Message(roleNumber, message))), ZIO.none))
         }
       }
     }
