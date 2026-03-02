@@ -4,7 +4,7 @@ ThisBuild / scalaVersion := "3.3.5"
 
 val zioVersion = "2.1.24"
 val sttpVersion = "4.0.15"
-val tapirVersion = "1.13.6"
+val tapirVersion = "1.13.9"
 
 lazy val common = crossProject(JSPlatform, JVMPlatform).in(file("common")).
   settings(

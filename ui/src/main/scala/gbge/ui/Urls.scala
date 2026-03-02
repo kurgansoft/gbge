@@ -27,6 +27,7 @@ object Urls {
 
   val joinPostFix: String = "/join/"
   val publicEvents: String = "/publicEvents/"
+  val nonPublicEvents: String = "/events/"
   val performActionPostFix: String = "performAction/"
   val setPortalCoordinatesPostFix: String = "/api/portalCoordinates/"
 

@@ -38,10 +38,10 @@ case class SpectatorState(
       } else {
         temp
       }
-    case CreateSSEStream => (this, eh => {
-      ClientEffects.createSSEConnection(eh)
-      ZIO.succeed(List.empty)
-    })
+    case CreateSSEStream => (this, eh => for {
+      _ <- ZIO.log("SpectatorState is attempting to subscribe to SSE stream.")
+      _ <- ClientEffects.createSSEConnection(eh).orDie
+    } yield List.empty)
     case WebsocketConnectionBrokeDown => this.copy(sseStreamStatus = BROKEN)
     case se : ScreenEvent =>
       val temp = offlineState.handleScreenEvent(se, frontendUniverse)

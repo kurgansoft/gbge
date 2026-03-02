@@ -83,12 +83,13 @@ case class ClientState(
           temp
         }
       case CreateSSEStream =>
-        if (you.isDefined)
-          (this, eh => {
-            ClientEffects.createSSEConnection(eh)
-            ZIO.succeed(List.empty)
-          })
-        else {
+        if (you.isDefined) {
+          val token = you.map(_._2)
+          (this, eh => for {
+            _ <- ZIO.log(s"ClientState is attempting to subscribe to SSE stream with token [${token.get}].")
+            _ <- ClientEffects.createSSEConnection(eh, token).orDie
+          } yield List.empty)
+        } else {
           this
         }
       case CHANGE_TO_TAB(tab) =>

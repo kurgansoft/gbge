@@ -1,5 +1,6 @@
 package gbge.ui.eps.tm
 
+import gbge.client.NewFU
 import gbge.shared.{FrontendPlayer, JoinResponse}
 import gbge.shared.tm.*
 import gbge.ui.eps.player.{ClientState, JoinResponseEvent}
@@ -140,10 +141,15 @@ case class TimeMachineState(
         case TimeMachineRetrievalFailed =>
           this.copy(status = LOADING_FAILED)
         case TMStateArrived(number, SpectatorPerspective, fu) =>
-          this.copy(selectedClientState = CSState_Loaded(SpectatorState(Some(fu), CONNECTED)))
+          val spectatorState: SpectatorState = SpectatorState(sseStreamStatus = CONNECTED)
+            .processEvent(NewFU(fu))._1
+          this.copy(selectedClientState = CSState_Loaded(spectatorState))
         case TMStateArrived(number, PlayerPerspective(playerId), fu) =>
           val player = fu.players.find(_.id == playerId).get
-          val clientState: ClientState = ClientState(Some(fu), Some((playerId, player.name))).processEvent(JoinResponseEvent(JoinResponse(player.id, "???")))._1
+          val clientState: ClientState =
+            ClientState(Some(fu), Some((playerId, player.name)))
+              .processEvent(JoinResponseEvent(JoinResponse(player.id, "???")))._1
+              .processEvent(NewFU(fu))._1
           this.copy(selectedClientState = CSState_Loaded(
             clientState
           ))

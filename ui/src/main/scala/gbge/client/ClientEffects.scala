@@ -2,19 +2,27 @@ package gbge.client
 
 import gbge.shared.actions.{GameAction, GeneralAction}
 import gbge.shared.{FrontendUniverse, JoinResponse}
-import gbge.ui.eps.player.{JoinResponseEvent, PlayerEvent, PlayerRecovered, RecoverTokenEvent}
-import gbge.ui.token.TokenService
 import gbge.ui.Urls
-import org.scalajs.dom.EventSource
+import gbge.ui.eps.player.{
+  JoinResponseEvent,
+  PlayerEvent,
+  PlayerRecovered,
+  RecoverTokenEvent
+}
+import gbge.ui.token.TokenService
 import sttp.capabilities
 import sttp.capabilities.zio.ZioStreams
-import sttp.client4.impl.zio.{FetchZioBackend, ZioServerSentEvents}
+import sttp.client4.impl.zio.FetchZioBackend
 import sttp.client4.ziojson.asJson
-import sttp.client4.{Request, Response, ResponseException, UriContext, WebSocketStreamBackend, asStream, basicRequest}
-import sttp.model.sse.ServerSentEvent
+import sttp.client4.{
+  Request,
+  ResponseException,
+  UriContext,
+  WebSocketStreamBackend,
+  basicRequest
+}
 import uiglue.EventLoop
 import zio.json.*
-import zio.stream.ZStream
 import zio.{Task, UIO, ZIO}
 
 object ClientEffects {
@@ -55,43 +63,27 @@ object ClientEffects {
     } yield x
   }
 
-
-  def createSSEConnection(eventHandler: EventLoop.EventHandler[GeneralEvent]): Unit = {
-    val eventSource = new EventSource(Urls.publicEvents)
-    eventSource.onmessage = message => {
-      println("message.data: " + message.data)
-      val ast = zio.json.ast.Json.decoder.decodeJson(message.data.toString).getOrElse(???)
-      val newUniverse: FrontendUniverse = FrontendUniverse.decodeWithDecoder(ast)(gbge.ui.RG.gameCodecs.map(_.decoder))
-      println("the decoded fu: " + newUniverse)
-      eventHandler(NewFU(newUniverse))
+  def createSSEConnection(eventHandler: EventLoop.EventHandler[GeneralEvent], token: Option[String] = None): Task[Unit] = {
+    val onMessage = (message: String) => {
+      val jsonMessage = message.substring(6) // The SSE message starts with 'data: ' that is why the first few characters are discarded
+      val ast = zio.json.ast.Json.decoder.decodeJson(jsonMessage).getOrElse(???)
+      val fu: FrontendUniverse = FrontendUniverse.decodeWithDecoder(ast)(gbge.ui.RG.gameCodecs.map(_.decoder))
+      eventHandler(NewFU(fu))
     }
-    eventSource.onerror = error => {
-      println("something went haywire: " + error)
-      eventHandler(WebsocketConnectionBrokeDown)
-    }
-  }
 
-  // NOT USED YET
-  def connectToPublicSseEndpointAndConsumeIt(): Task[Response[Either[String, Unit]]] = {
-    val sseRequest =
-      basicRequest
-        .get(uri"http://localhost:8080/publicEvents")
-        .response(asStream(ZioStreams)(stream => {
-      val x: ZStream[Any, Throwable, ServerSentEvent] = stream.viaFunction(ZioServerSentEvents.parse)
-      val t: ZIO[Any, Throwable, Unit] = for {
-        _ <- zio.Console.printLine("about to consume stream...")
-        a <- x.foreach(a => for {
-            _ <- zio.Console.printLine("the raw data: " + a.data)
-            ast = zio.json.ast.Json.decoder.decodeJson(a.data.get).getOrElse(???)
-            _ <- zio.Console.printLine("the ast => " + ast)
-          } yield ())
-          .tapError(e => zio.Console.printLine("something went wrong... ==> " + e).orDie)
-        _ <- zio.Console.printLine("is it reached?")
-      } yield ()
-      t
-    }))
-    val q: Task[Response[Either[String, Unit]]] = backend.send(sseRequest)
-    q
+    val url: String = token match {
+      case Some(_) => Urls.nonPublicEvents
+      case None => Urls.publicEvents
+    }
+
+    for {
+      response <- ZIO.fromFuture(_ => SseUtils.createFetchPromise(url, token).toFuture)
+      _ <- ZIO.fromFuture(ec => SseUtils.processStream(response.body, onMessage)(ec))
+        .mapError(error =>
+          eventHandler(WebsocketConnectionBrokeDown)
+          error
+        )
+    } yield ()
   }
 
   def joinWithName(name: String): ZIO[TokenService, Nothing, List[PlayerEvent]] = {
