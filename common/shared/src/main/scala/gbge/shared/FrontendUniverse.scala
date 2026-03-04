@@ -54,6 +54,7 @@ object FrontendUniverse {
 
   private object RawRepresentation {
     implicit val schema: Schema[RawRepresentation] = DeriveSchema.gen[RawRepresentation]
-    implicit val codec: JsonCodec[RawRepresentation] = DeriveJsonCodec.gen[RawRepresentation]
+    implicit val codec: JsonCodec[RawRepresentation] =
+      zio.schema.codec.JsonCodec.jsonCodec(schema)
   }
 }

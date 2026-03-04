@@ -2,7 +2,7 @@ package gbge.shared.tm
 
 import gbge.shared.FrontendPlayer
 import gbge.shared.actions.{Action, GameAction, GeneralAction}
-import zio.json.{DeriveJsonCodec, JsonCodec}
+import zio.json.JsonCodec
 import zio.schema.{DeriveSchema, Schema}
 
 case class EncodedActionInvokerAndPlayers(actionEncodedAsJson: String, invoker: Option[Int], players: List[FrontendPlayer]) {
@@ -34,5 +34,6 @@ case class EncodedActionInvokerAndPlayers(actionEncodedAsJson: String, invoker: 
 
 object EncodedActionInvokerAndPlayers {
   implicit val schema: Schema[EncodedActionInvokerAndPlayers] = DeriveSchema.gen
-  implicit val jsonCodec: JsonCodec[EncodedActionInvokerAndPlayers] = DeriveJsonCodec.gen[EncodedActionInvokerAndPlayers]
+  implicit val jsonCodec: JsonCodec[EncodedActionInvokerAndPlayers] =
+    zio.schema.codec.JsonCodec.jsonCodec(schema)
 }

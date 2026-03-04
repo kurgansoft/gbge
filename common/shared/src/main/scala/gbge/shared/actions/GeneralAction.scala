@@ -9,10 +9,9 @@ sealed trait GeneralAction extends Action {
 }
 
 object GeneralAction {
-  implicit val codec: JsonCodec[GeneralAction] =
-    DeriveJsonCodec.gen[GeneralAction]
-  
   implicit val schema: Schema[GeneralAction] = DeriveSchema.gen
+  implicit val codec: JsonCodec[GeneralAction] =
+    zio.schema.codec.JsonCodec.jsonCodec(schema)
 }
 
 case class ProvideToken(token: String) extends GeneralAction {

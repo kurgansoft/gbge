@@ -1,7 +1,7 @@
 package gbge.shared.tm
 
 import gbge.shared.actions.*
-import zio.json.{DeriveJsonCodec, JsonCodec}
+import zio.json.JsonCodec
 import zio.schema.{DeriveSchema, Schema}
 
 case class ActionStackInTransit(entries: List[EncodedActionInvokerAndPlayers]) {
@@ -10,8 +10,8 @@ case class ActionStackInTransit(entries: List[EncodedActionInvokerAndPlayers]) {
 
 object ActionStackInTransit {
   implicit val schema: Schema[ActionStackInTransit] = DeriveSchema.gen
-  
-  implicit val jsonCodec: JsonCodec[ActionStackInTransit] = DeriveJsonCodec.gen[ActionStackInTransit]
+  implicit val jsonCodec: JsonCodec[ActionStackInTransit] =
+    zio.schema.codec.JsonCodec.jsonCodec(schema)
 }
 
 

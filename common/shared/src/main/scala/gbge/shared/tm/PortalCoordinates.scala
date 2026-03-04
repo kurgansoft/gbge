@@ -9,10 +9,7 @@ case class PortalCoordinates(
                               selectedPerspective: Option[Perspective])
 
 object PortalCoordinates {
-
-  implicit val codec: JsonCodec[PortalCoordinates] =
-    DeriveJsonCodec.gen[PortalCoordinates]
-
   implicit val schema: Schema[PortalCoordinates] = DeriveSchema.gen
-
+  implicit val codec: JsonCodec[PortalCoordinates] =
+    zio.schema.codec.JsonCodec.jsonCodec(schema)
 }

@@ -8,10 +8,9 @@ sealed trait Perspective {
 }
 
 object Perspective {
-  implicit val codec: JsonCodec[Perspective] =
-    DeriveJsonCodec.gen[Perspective]
-
   implicit val schema: Schema[Perspective] = DeriveSchema.gen
+  implicit val codec: JsonCodec[Perspective] =
+    zio.schema.codec.JsonCodec.jsonCodec(schema)
 
   def apply(number: Int): Perspective = {
     if (number == 0) SpectatorPerspective else PlayerPerspective(number)

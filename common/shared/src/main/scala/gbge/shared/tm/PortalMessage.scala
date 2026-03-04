@@ -7,10 +7,9 @@ import zio.schema.{DeriveSchema, Schema}
 sealed trait PortalMessage
 
 object PortalMessage {
-  implicit val codec: JsonCodec[PortalMessage] =
-    DeriveJsonCodec.gen[PortalMessage]
-
   implicit val schema: Schema[PortalMessage] = DeriveSchema.gen
+  implicit val codec: JsonCodec[PortalMessage] =
+    zio.schema.codec.JsonCodec.jsonCodec(schema)
 }
 
 case class PortalMessageWithPayload(rawFU: String , perspective: Perspective) extends PortalMessage
