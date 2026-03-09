@@ -244,7 +244,7 @@ case class Universe(supportedGames: Seq[BackendGameProps[_,_]],
     if (game.isEmpty && selectedGame.isDefined && selectedGame.get < supportedGames.size) {
       val result = supportedGames(selectedGame.get).start(this.players.size)
       val temp = this.copy(game = Some(result._1))
-      if (result._2.isDefined){
+      if (result._2.isDefined) {
         temp.reduce(result._2.get, Some(player.id))
       } else {
         temp

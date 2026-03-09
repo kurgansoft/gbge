@@ -70,7 +70,7 @@ case class ClientState(
       case RecoverTokenEvent(token) =>
         (this, ClientEffects.getPlayerWithToken(token))
       case sa: ScreenEvent =>
-        val x = offlineState.handleScreenEvent(sa, frontendUniverse, None)
+        val x = offlineState.handleScreenEvent(sa, frontendUniverse, you.map(_._1))
         (this.copy(offlineState = x._1), _ => x._2)
       case PlayerRecovered(id, token) =>
         println("Player id successfully recovered; subscribing to SSE stream")
