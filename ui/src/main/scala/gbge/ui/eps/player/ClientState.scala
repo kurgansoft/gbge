@@ -46,16 +46,13 @@ case class ClientState(
   override def processEvent(event: Event): (ClientState, EventLoop.EventHandler[Event] => ZIO[TokenService, Nothing, List[Event]]) = {
     event match {
       case CheckForTokenEvent => (this, _ => for {
-        _ <- ZIO.log("checking for token?") 
         events <- ClientEffects.recoverTokenEffect
       } yield events)
       case DispatchActionWithToken(action) =>
-        println(s"dispatching action ??? $action")
         if (you.isDefined) {
           action match {
             case ga: GeneralAction => (this, ClientEffects.submitGeneralActionWithToken(ga, you.get._2))
             case gameAction: GameAction =>
-              println(s"sending gameAction? ({println}) $gameAction")
               (this,
               ClientEffects.submitGameSpecificActionWithToken(gameAction, this.frontendUniverse.get.selectedGame.get, you.map(_._2).get)
             )
@@ -73,7 +70,6 @@ case class ClientState(
         val x = offlineState.handleScreenEvent(sa, frontendUniverse, you.map(_._1))
         (this.copy(offlineState = x._1), _ => x._2)
       case PlayerRecovered(id, token) =>
-        println("Player id successfully recovered; subscribing to SSE stream")
         (this.copy(you = Some(id, token)), eh => ZIO.succeed(List(CreateSSEStream)))
       case JoinResponseEvent(joinResponse) =>
         val temp = this.copy(you = Some((joinResponse.id, joinResponse.token)))
@@ -86,7 +82,6 @@ case class ClientState(
         if (you.isDefined) {
           val token = you.map(_._2)
           (this, eh => for {
-            _ <- ZIO.log(s"ClientState is attempting to subscribe to SSE stream with token [${token.get}].")
             _ <- ClientEffects.createSSEConnection(eh, token).orDie
           } yield List.empty)
         } else {
