@@ -161,9 +161,16 @@ object Displayer {
           }
           div(t)
         case ss: SpectatorState =>
-          div(
-            Screens0.root(ss, spectatorBridge)
-          )
+          Try(Screens0.root(ss, spectatorBridge)) match {
+            case scala.util.Success(value) => div(value)
+            case scala.util.Failure(exception) =>
+              div(color:= "yellow",
+                h1("Encountered some error"),
+                hr,
+                div(exception.getMessage),
+                div(exception.getStackTrace.mkString("\n\t"))
+              )
+          }
         case _ => div("some error")
       }
     }
