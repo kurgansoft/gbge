@@ -3,8 +3,8 @@ ThisBuild / version := "0.3.0"
 ThisBuild / scalaVersion := "3.3.5"
 
 val zioVersion = "2.1.24"
-val sttpVersion = "4.0.15"
-val tapirVersion = "1.13.9"
+val sttpVersion = "4.0.19"
+val tapirVersion = "1.13.13"
 
 lazy val common = crossProject(JSPlatform, JVMPlatform).in(file("common")).
   settings(
@@ -12,7 +12,7 @@ lazy val common = crossProject(JSPlatform, JVMPlatform).in(file("common")).
     libraryDependencies ++= Seq(
       "dev.zio" %%% "zio" % zioVersion,
       "dev.zio" %%% "zio-test" % zioVersion % Test,
-      "dev.zio" %%% "zio-schema-json" % "1.7.5", // it has to be the exact version that zio-http uses
+      "dev.zio" %%% "zio-schema-json" % "1.8.3", // it has to be the exact version that zio-http uses
       "com.softwaremill.sttp.client4" %%% "zio" % sttpVersion,
       "com.softwaremill.sttp.client4" %%% "zio-json" % sttpVersion,
     )
@@ -24,7 +24,7 @@ lazy val common = crossProject(JSPlatform, JVMPlatform).in(file("common")).
 lazy val backend = project.in(file("backend")).settings(
   name := "backend",
   libraryDependencies ++= Seq(
-    "dev.zio" %% "zio-http" % "3.8.1",
+    "dev.zio" %% "zio-http" % "3.10.1",
     "com.lihaoyi" %% "os-lib" % "0.11.8",
     "dev.zio" %% "zio-mock" % "1.0.0-RC12",
     "com.lihaoyi" %% "pprint"  % "0.9.6"
@@ -42,7 +42,9 @@ lazy val ui = project.in(file("ui")).settings(
     "com.lihaoyi" %%% "pprint"  % "0.9.6",
     "com.github.kurgansoft.uiglue" %%% "uiglue" % uiGlueCommitHash,
     "com.softwaremill.sttp.tapir" %%% "tapir-sttp-client4" % tapirVersion,
-    "com.softwaremill.sttp.tapir" %%% "tapir-json-zio" % tapirVersion
+    "com.softwaremill.sttp.tapir" %%% "tapir-json-zio" % tapirVersion excludeAll(
+      ExclusionRule("dev.zio", "zio-json_sjs1_3")
+    )
   ),
   scalacOptions ++= Seq(
     "-Xmax-inlines", "100"
