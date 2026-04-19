@@ -1,10 +1,11 @@
 package gbge.backend
 
+import gbge.backend.config.GameConfig
 import gbge.backend.endpoints_and_aspects.Aspects
 import gbge.backend.gameroutes.{GameRoutes, StaticRoutes, TMRoutes}
 import gbge.backend.models.{Player, Universe}
 import gbge.backend.services.state_manager.{TimeMachineContent, TimeMachineStateManager}
-import gbge.backend.services.{MainService, MainServiceLive, SequentialTokenGenerator}
+import gbge.backend.services.{MainService, MainServiceLive, RandomTokenGenerator, SequentialTokenGenerator}
 import gbge.shared.tm.ActionStackInTransit
 import zio.http.{Route, Routes, Server}
 import zio.stream.SubscriptionRef
@@ -37,14 +38,21 @@ case class GenericLauncher(games: Seq[BackendGameProps[_,_]]) {
     _ <- tmStateManager.universeStream.foreach(u => universeRef.set(u)).fork
 
     u <- universeRef.get
-    tokenValueZero: Int = {
-      if (u.players.isEmpty)
-        100
+
+    tokenGenerator <- {
+      val tokenValueZero: Int =
+      {
+        if (u.players.isEmpty)
+          100
+        else
+          u.players.keys.map(_.substring(0,3).toInt).max
+      }
+      if (gameConfig.sequentialTokenGenerator)
+        SequentialTokenGenerator.layer.build.provideSomeLayer(ZLayer.succeed(tokenValueZero))
       else
-        u.players.keys.map(_.toInt).max
-    } // Will require some redesign when support for non-sequential TokenGenerator will be added
-    _ <- ZIO.log("Token value 0: " + tokenValueZero)
-    tokenGenerator <- SequentialTokenGenerator.layer.build.provideSomeLayer(ZLayer.succeed(tokenValueZero))
+        RandomTokenGenerator.layer.build.provideSomeLayer(ZLayer.succeed(tokenValueZero))
+    }
+
     mainService <- MainServiceLive.layer.build.provideSomeEnvironment[Scope](scope => scope.add(tmStateManager) ++ tokenGenerator.add(games))
 
     routesWithDepsProvided = createRoutes(gameConfig.devStaticRouteOptions, gameConfig.timeMachineEnabled).provideEnvironment(ZEnvironment(universeRef).add(tmStateManager) ++ mainService)

@@ -5,7 +5,7 @@ import zio.{IO, Ref, ZIO, ZLayer}
 case class SequentialTokenGenerator(valueZero: Ref[Int]) extends TokenGenerator {
   override val generateToken: IO[Nothing, String] = for {
     nextToken <- valueZero.updateAndGet(_ + 1)
-  } yield nextToken.toString
+  } yield f"$nextToken%03d"
 }
 
 object SequentialTokenGenerator {

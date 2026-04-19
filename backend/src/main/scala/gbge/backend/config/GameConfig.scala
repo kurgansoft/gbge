@@ -1,4 +1,4 @@
-package gbge.backend
+package gbge.backend.config
 
 import gbge.backend.gameroutes.StaticRoutes.DevStaticRouteOptions
 import zio.{Config, IO, ZIO}
@@ -6,6 +6,7 @@ import zio.{Config, IO, ZIO}
 case class GameConfig(
     host: Option[String] = None,
     port: Int = 8080,
+    sequentialTokenGenerator: Boolean = false,
     devStaticRouteOptions: Option[DevStaticRouteOptions] = None,
     timeMachineEnabled: Boolean = false
 )

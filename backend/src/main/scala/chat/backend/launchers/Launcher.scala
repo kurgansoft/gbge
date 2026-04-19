@@ -1,9 +1,10 @@
 package chat.backend.launchers
 
 import chat.backend.BackendChatGameProps
+import gbge.backend.config.GameConfig
 import gbge.backend.gameroutes.StaticRoutes
 import gbge.backend.gameroutes.StaticRoutes.DevStaticRouteOptions
-import gbge.backend.{BackendGameProps, GameConfig, GenericLauncher}
+import gbge.backend.{BackendGameProps, GenericLauncher}
 import zio.{
   ConfigProvider,
   Runtime,
