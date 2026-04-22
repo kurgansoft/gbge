@@ -13,8 +13,8 @@ object Screens0 {
     implicit val players: List[FrontendPlayer] = state.frontendUniverse.map(_.players.toList).orNull
 
     state.sseStreamStatus match {
-      case NOT_YET_ESTABLISHED => div(h1("WS connection is NOT YET ESTABLISHED", color:="yellow"))
-      case BROKEN => div(h1("WS connection is BROKEN", color:="yellow"))
+      case NOT_YET_ESTABLISHED => div(h1("Connection is NOT YET ESTABLISHED", color:="yellow"))
+      case BROKEN => div(h1("Connection is BROKEN", color:="yellow"))
       case CONNECTED =>
         if (state.frontendUniverse.flatMap(_.game).isEmpty) {
           if (state.frontendUniverse.isDefined)
