@@ -11,6 +11,7 @@ object LocalStorageBasedTokenService extends TokenService {
   override val getToken: IO[Nothing, Option[String]] = {
     org.scalajs.dom.window.localStorage.getItem("token") match {
       case value if value.forall(_.isWhitespace) => ZIO.none
+      case null => ZIO.none
       case value => ZIO.some(value)
     }
   }

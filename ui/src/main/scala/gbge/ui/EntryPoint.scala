@@ -3,7 +3,7 @@ package gbge.ui
 import gbge.ui.eps.player.{CheckForTokenEvent, ClientState, CreateSSEStream}
 import gbge.ui.eps.spectator.SpectatorState
 import gbge.ui.eps.tm.{TMClientEvent, TimeMachineState}
-import gbge.ui.token.{TokenService, URLBasedTokenService}
+import gbge.ui.token.{LocalStorageBasedTokenService, TokenService}
 import org.scalajs.dom.html.Div
 import uiglue.EventLoop.EventHandler
 import uiglue.{Event, EventLoop, UIState}
@@ -20,7 +20,7 @@ trait EntryPoint {
   implicit val tracer: Tracer = Tracer.instance
   implicit val unsafe: Unsafe = Unsafe.unsafe(x => x)
 
-  val tokenService: ZEnvironment[TokenService] = ZEnvironment(URLBasedTokenService)
+  val tokenService: ZEnvironment[TokenService] = ZEnvironment(LocalStorageBasedTokenService)
 
   @JSExport
   def spectatorEntryPoint(div: Div): Unit = {
