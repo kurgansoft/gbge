@@ -35,7 +35,16 @@ object SseUtils {
         Future.failed(new RuntimeException("The SSE stream was closed."))
       } else {
         val decodedValue = decoder.applyDynamic("decode")(result.value.asInstanceOf[Chunk[Byte]], Dynamic.literal(stream = true))
-        onEventCallback(decodedValue.toString)
+
+        val allEvents = decodedValue.toString.split("\n\n")
+        // Sometimes multiple events are received almost simultaneously.
+        // In those cases it is enough to process the latest one, since the older ones would be overwritten anyway.
+        if (allEvents.size > 1) {
+          println(s"Multiple [${allEvents.size}] SSE events received; only processing the last one.")
+        }
+        val lastEvent = allEvents.last
+        onEventCallback(lastEvent)
+
         readLoop()
       }
     } yield ()
