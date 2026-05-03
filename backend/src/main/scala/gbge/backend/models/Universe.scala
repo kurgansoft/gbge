@@ -107,7 +107,7 @@ case class Universe(supportedGames: Seq[BackendGameProps[_,_]],
             temp
           else
             val newAdmin = temp.players.minBy(_._2.id)
-            temp.copy(players = players.updatedWith(newAdmin._1)({
+            temp.copy(players = temp.players.updatedWith(newAdmin._1)({
               case Some(player) => Some(player.copy(isAdmin = true))
               case None => None
             }))
