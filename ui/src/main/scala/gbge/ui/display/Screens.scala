@@ -5,7 +5,7 @@ import japgolly.scalajs.react.*
 import japgolly.scalajs.react.vdom.all.*
 import gbge.shared.actions.*
 import gbge.shared.FrontendPlayer
-import gbge.ui.eps.player.{CHANGE_TO_TAB, ClientState}
+import gbge.ui.eps.player.{CHANGE_TO_TAB, ClientState, LogOut}
 import gbge.ui.state.screenstates.*
 import japgolly.scalajs.react.vdom.Attr
 import uiglue.{Event, EventLoop}
@@ -51,7 +51,7 @@ object Screens {
     div(color:="yellow", display:="flex", flexDirection:="column", alignItems:="center", overflowY:="auto",
       h1("META SCREEN"),
       button(`class`:="btn btn-primary", "Log out", onClick --> Callback {
-        eventHandler(DispatchActionWithToken(KickPlayer(state.you.get._1)))
+        eventHandler(LogOut)
       }),br,
       Option.when(state.frontendUniverse.flatMap(_.game).isDefined)(div(roleButton, br)),
       h1("Game specific settings/actions:"),br,

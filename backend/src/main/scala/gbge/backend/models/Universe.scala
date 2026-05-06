@@ -111,7 +111,7 @@ case class Universe(supportedGames: Seq[BackendGameProps[_,_]],
               case Some(player) => Some(player.copy(isAdmin = true))
               case None => None
             }))
-        case None => GeneralFailure(s"no player with if $playerId")
+        case None => GeneralFailure(s"no player with id [$playerId]")
       }
     } else {
       UnauthorizedFailure("You have no permission to do that.")

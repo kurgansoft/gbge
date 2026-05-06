@@ -2,7 +2,7 @@ package gbge.ui.eps.player
 
 import gbge.client.*
 import gbge.shared.{FrontendPlayer, FrontendUniverse, GameRole}
-import gbge.shared.actions.{GameAction, GeneralAction}
+import gbge.shared.actions.{GameAction, GeneralAction, KickPlayer}
 import gbge.ui.ClientGameProps
 import gbge.ui.state.OfflineState
 import gbge.ui.state.screenstates.{JoinScreenState, WelcomeScreenState}
@@ -69,9 +69,6 @@ case class ClientState(
           (this, _ => ZIO.succeed(List.empty))
         }
       case NewFU(fu) => handleNewFU(fu)
-      case BootstrapPlayerEvent =>
-//        (this, ClientEffects.recoverTokenEffect)
-        this
       case RecoverTokenEvent(token) =>
         (this, ClientEffects.getPlayerWithToken(token))
       case sa: ScreenEvent =>
@@ -79,6 +76,20 @@ case class ClientState(
         (this.copy(offlineState = x._1), _ => x._2)
       case PlayerRecovered(id, token) =>
         (this.copy(you = Some(id, token)), eh => ZIO.succeed(List(CreateSSEStream)))
+      case FailedToRecoverPlayer =>
+        (this.copy(you = None), eh => ClientEffects.clearToken.as(List(Reload)))
+      case LogOut =>
+        (this, eh => for {
+          _ <- ClientEffects.submitGeneralActionWithToken(KickPlayer(you.get._1), you.get._2)
+          tokenService <- ZIO.service[TokenService]
+          _ <- tokenService.clearToken
+          _ = org.scalajs.dom.window.location.reload()
+        } yield List.empty)
+      case Reload =>
+        (this, eh => for {
+          _ <- ZIO.log("...")
+          _ = org.scalajs.dom.window.location.reload()
+        } yield List.empty)
       case JoinResponseEvent(joinResponse) =>
         val temp = this.copy(you = Some((joinResponse.id, joinResponse.token)))
         if (temp.offlineState.isInstanceOf[JoinScreenState]) {

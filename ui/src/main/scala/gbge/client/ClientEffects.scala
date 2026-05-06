@@ -3,24 +3,13 @@ package gbge.client
 import gbge.shared.actions.{GameAction, GeneralAction}
 import gbge.shared.{FrontendUniverse, JoinResponse}
 import gbge.ui.Urls
-import gbge.ui.eps.player.{
-  JoinResponseEvent,
-  PlayerEvent,
-  PlayerRecovered,
-  RecoverTokenEvent
-}
+import gbge.ui.eps.player.{FailedToRecoverPlayer, JoinResponseEvent, PlayerEvent, PlayerRecovered, RecoverTokenEvent}
 import gbge.ui.token.TokenService
 import sttp.capabilities
 import sttp.capabilities.zio.ZioStreams
 import sttp.client4.impl.zio.FetchZioBackend
 import sttp.client4.ziojson.asJson
-import sttp.client4.{
-  Request,
-  ResponseException,
-  UriContext,
-  WebSocketStreamBackend,
-  basicRequest
-}
+import sttp.client4.{Request, ResponseException, UriContext, WebSocketStreamBackend, basicRequest}
 import uiglue.EventLoop
 import zio.json.*
 import zio.{Task, UIO, ZIO}
@@ -39,6 +28,11 @@ object ClientEffects {
     }
   } yield result
 
+  val clearToken: ZIO[TokenService, Nothing, List[PlayerEvent]] = for {
+    tokenService <- ZIO.service[TokenService]
+    _ <- tokenService.clearToken
+  } yield List.empty
+
   def getPlayerWithToken(token0: String): UIO[List[PlayerEvent]] = {
 
     import sttp.client4.asString
@@ -52,7 +46,7 @@ object ClientEffects {
       x <- backend.send(request).map(response => response.body match
         case Left(l) =>
           println("the l: " + l.getClass + " - " + l)
-          List.empty
+          List(FailedToRecoverPlayer)
         case Right(playerId) =>
           println("the decoded player is: " + playerId)
           List(
