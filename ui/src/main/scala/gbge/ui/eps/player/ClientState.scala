@@ -1,7 +1,7 @@
 package gbge.ui.eps.player
 
 import gbge.client.*
-import gbge.shared.FrontendUniverse
+import gbge.shared.{FrontendPlayer, FrontendUniverse, GameRole}
 import gbge.shared.actions.{GameAction, GeneralAction}
 import gbge.ui.ClientGameProps
 import gbge.ui.state.OfflineState
@@ -18,14 +18,22 @@ case class ClientState(
                         offlineState: OfflineState[TokenService] = JoinScreenState(),
                         tab: Int = 1, // 1 -> general, 2 -> meta, 3-> admin
                       ) extends UIState[Event, TokenService] {
-  lazy val playerId = you.getOrElse(???)._1
-  lazy val player = frontendUniverse.get.players.find(_.id == playerId)
-  lazy val isAdmin: Boolean = player.exists(_.isAdmin)
+
+  lazy val playerMaybe: Option[FrontendPlayer] = for {
+    playerId <- you.map(_._1)
+    fu <- frontendUniverse
+    player <- fu.players.find(_.id == playerId)
+  } yield player
+
+  lazy val allRoles: List[GameRole] = (for {
+    fu <- frontendUniverse
+    game <- fu.game
+  } yield game.roles).getOrElse(List.empty)
+
+  lazy val isAdmin: Boolean = playerMaybe.exists(_.isAdmin)
   
-  lazy val allRoles = frontendUniverse.get.game.get.roles
-  
-  lazy val yourRole = for {
-    p <- player
+  lazy val yourRole: Option[GameRole] = for {
+    p <- playerMaybe
     yourRoleId <- p.role
     matchedRole <- allRoles.find(_.roleId == yourRoleId)
   } yield matchedRole
