@@ -12,7 +12,7 @@ lazy val common = crossProject(JSPlatform, JVMPlatform).in(file("common")).
     libraryDependencies ++= Seq(
       "dev.zio" %%% "zio" % zioVersion,
       "dev.zio" %%% "zio-test" % zioVersion % Test,
-      "dev.zio" %%% "zio-schema-json" % "1.8.5", // it has to be the exact version that zio-http uses
+      "dev.zio" %%% "zio-schema-json" % "1.8.3", // it has to be the exact version that zio-http uses
       "com.softwaremill.sttp.client4" %%% "zio" % sttpVersion,
       "com.softwaremill.sttp.client4" %%% "zio-json" % sttpVersion,
     )
@@ -24,7 +24,7 @@ lazy val common = crossProject(JSPlatform, JVMPlatform).in(file("common")).
 lazy val backend = project.in(file("backend")).settings(
   name := "backend",
   libraryDependencies ++= Seq(
-    "dev.zio" %% "zio-http" % "3.11.1",
+    "dev.zio" %% "zio-http" % "3.11.0",
     "com.lihaoyi" %% "os-lib" % "0.11.8",
     "dev.zio" %% "zio-mock" % "1.0.0-RC12",
     "com.lihaoyi" %% "pprint"  % "0.9.6"
