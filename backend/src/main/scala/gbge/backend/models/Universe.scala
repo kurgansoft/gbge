@@ -158,7 +158,7 @@ case class Universe(supportedGames: Seq[BackendGameProps[_,_]],
             }
             gameResult match
               case Left(failure) => failure
-              case Right(game) => this.copy(game = Some(game))
+              case Right((reducedGame, effect)) => Right(this.copy(game = Some(reducedGame)), effect)
           }
       }
     }

@@ -15,10 +15,10 @@ trait BackendGame[GA <: GameAction, FG <: FrontendGame[GA]] extends Game {
 
   val noOfPlayers: Int
 
-  def increaseRoomSize(): Either[Failure, BackendGame[_ <: GA, _ <: FG]] =
+  def increaseRoomSize(): Either[Failure, (BackendGame[_ <: GA, _ <: FG], IO[Nothing, Option[Action]])] =
     Left(GeneralFailure("Increasing the room size is not supported in this game!"))
 
-  def decreaseRoomSize(): Either[Failure, BackendGame[_ <: GA, _ <: FG]] =
+  def decreaseRoomSize(): Either[Failure, (BackendGame[_ <: GA, _ <: FG], IO[Nothing, Option[Action]])] =
     Left(GeneralFailure("Decreasing the room size is not supported in this game!"))
 
   def reduce(gameAction: GameAction, invoker: Player): Either[Failure, (BackendGame[_ <: GA, _ <: FG], IO[Nothing, Option[Action]])]
