@@ -2,8 +2,9 @@ package gbge.ui.eps.portal
 
 import gbge.client.NewFU
 import gbge.shared.tm.{PlayerPerspective, SpectatorPerspective}
+import gbge.ui.eps.SSEStatus.CONNECTED
 import gbge.ui.eps.player.ClientState
-import gbge.ui.eps.spectator.{CONNECTED, SpectatorState}
+import gbge.ui.eps.spectator.SpectatorState
 import uiglue.{Event, EventLoop, UIState}
 import zio.{UIO, ZIO}
 

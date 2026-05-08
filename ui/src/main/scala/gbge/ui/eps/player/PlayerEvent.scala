@@ -12,6 +12,7 @@ case class JoinResponseEvent(joinResponse: JoinResponse) extends PlayerEvent
 case object CreateSSEStream extends PlayerEvent
 case object Reload extends PlayerEvent
 case object LogOut extends PlayerEvent
+case object Reconnect extends PlayerEvent
 
 abstract class ScreenEvent extends PlayerEvent
 abstract class UIEvent extends PlayerEvent

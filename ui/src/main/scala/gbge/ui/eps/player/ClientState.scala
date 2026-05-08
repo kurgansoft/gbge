@@ -4,6 +4,8 @@ import gbge.client.*
 import gbge.shared.{FrontendPlayer, FrontendUniverse, GameRole}
 import gbge.shared.actions.{GameAction, GeneralAction, KickPlayer}
 import gbge.ui.ClientGameProps
+import gbge.ui.eps.SSEStatus
+import gbge.ui.eps.SSEStatus._
 import gbge.ui.state.OfflineState
 import gbge.ui.state.screenstates.{JoinScreenState, WelcomeScreenState}
 import gbge.ui.token.TokenService
@@ -14,6 +16,7 @@ import scala.language.implicitConversions
 
 case class ClientState(
                         frontendUniverse: Option[FrontendUniverse] = None,
+                        sseStreamStatus: SSEStatus = NOT_YET_ESTABLISHED,
                         you: Option[(Int, String)] = None,
                         offlineState: OfflineState[TokenService] = JoinScreenState(),
                         tab: Int = 1, // 1 -> general, 2 -> meta, 3-> admin
@@ -68,7 +71,8 @@ case class ClientState(
         } else {
           (this, _ => ZIO.succeed(List.empty))
         }
-      case NewFU(fu) => handleNewFU(fu)
+      case NewFU(fu) =>
+        handleNewFU(fu)
       case RecoverTokenEvent(token) =>
         (this, ClientEffects.getPlayerWithToken(token))
       case sa: ScreenEvent =>
@@ -106,6 +110,13 @@ case class ClientState(
         } else {
           this
         }
+      case ConnectionBrokeDown =>
+        this.copy(sseStreamStatus = BROKEN)
+      case Reconnect =>
+        if (sseStreamStatus == BROKEN)
+          (this, _ => ZIO.succeed(List(CreateSSEStream)))
+        else
+          this
       case CHANGE_TO_TAB(tab) =>
         this.copy(tab = tab)
       case _ =>
@@ -127,13 +138,13 @@ case class ClientState(
     if (updatedYou.isEmpty) {
       this.copy(frontendUniverse = Some(fu), offlineState = JoinScreenState(), tab = newTab)
     } else if (fu.game.isDefined) {
-      val temp = this.copy(tab = newTab)
+      val temp = this.copy(tab = newTab, sseStreamStatus = CONNECTED)
       gbge.ui.RG.registeredGames(fu.selectedGame.get).handleNewFU(temp, fu)
     }
     else {
       this.offlineState match {
-        case _ : WelcomeScreenState => this.copy(frontendUniverse = Some(fu), tab = newTab)
-        case _ => this.copy(frontendUniverse = Some(fu), offlineState = WelcomeScreenState(), tab = newTab)
+        case _ : WelcomeScreenState => this.copy(frontendUniverse = Some(fu), sseStreamStatus = CONNECTED, tab = newTab)
+        case _ => this.copy(frontendUniverse = Some(fu), sseStreamStatus = CONNECTED, offlineState = WelcomeScreenState(), tab = newTab)
       }
 
     }

@@ -28,11 +28,11 @@ object Displayer {
           )
         case EverythingIsSelected => {
           portalState.clientState match {
-            case Some(SpectatorState(frontendUniverse, wsConnectionStatus, offlineState)) =>
-              Screens0.root(SpectatorState(frontendUniverse, wsConnectionStatus, offlineState), spectatorBridge)
-            case Some(ClientState(frontendUniverse, you, offlineState, tab)) =>
+            case Some(SpectatorState(frontendUniverse, connectionStatus, offlineState)) =>
+              Screens0.root(SpectatorState(frontendUniverse, connectionStatus, offlineState), spectatorBridge)
+            case Some(ClientState(frontendUniverse, connectionStatus, you, offlineState, tab)) =>
               gbge.ui.display.Displayer.rootComponent(
-                (ClientState(frontendUniverse, you, offlineState, tab), playerBridge)
+                (ClientState(frontendUniverse, connectionStatus, you, offlineState, tab), playerBridge)
               ).vdomElement
           case _ =>
             div(color:="yellow",
@@ -43,9 +43,9 @@ object Displayer {
       portalState.clientState match {
         case Some(SpectatorState(frontendUniverse, wsConnectionStatus, offlineState)) =>
           Screens0.root(SpectatorState(frontendUniverse, wsConnectionStatus, offlineState), spectatorBridge)
-        case Some(ClientState(frontendUniverse, you, offlineState, tab)) =>
+        case Some(ClientState(frontendUniverse, connectionStatus, you, offlineState, tab)) =>
           gbge.ui.display.Displayer.rootComponent(
-            (ClientState(frontendUniverse, you, offlineState, tab), playerBridge)
+            (ClientState(frontendUniverse, connectionStatus, you, offlineState, tab), playerBridge)
           ).vdomElement
         case _ =>
           div(color:="yellow",

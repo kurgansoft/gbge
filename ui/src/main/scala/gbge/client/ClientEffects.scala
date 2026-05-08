@@ -74,7 +74,7 @@ object ClientEffects {
       response <- ZIO.fromFuture(_ => SseUtils.createFetchPromise(url, token).toFuture)
       _ <- ZIO.fromFuture(ec => SseUtils.processStream(response.body, onMessage)(ec))
         .mapError(error =>
-          eventHandler(WebsocketConnectionBrokeDown)
+          eventHandler(ConnectionBrokeDown)
           error
         )
     } yield ()

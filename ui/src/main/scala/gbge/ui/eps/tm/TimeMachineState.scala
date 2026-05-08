@@ -3,8 +3,9 @@ package gbge.ui.eps.tm
 import gbge.client.NewFU
 import gbge.shared.{FrontendPlayer, JoinResponse}
 import gbge.shared.tm.*
+import gbge.ui.eps.SSEStatus.CONNECTED
 import gbge.ui.eps.player.{ClientState, JoinResponseEvent}
-import gbge.ui.eps.spectator.{CONNECTED, SpectatorState}
+import gbge.ui.eps.spectator.SpectatorState
 import uiglue.EventLoop.EventHandler
 import uiglue.{Event, UIState}
 import zio.*
@@ -147,7 +148,7 @@ case class TimeMachineState(
         case TMStateArrived(number, PlayerPerspective(playerId), fu) =>
           val player = fu.players.find(_.id == playerId).get
           val clientState: ClientState =
-            ClientState(Some(fu), Some((playerId, player.name)))
+            ClientState(Some(fu), CONNECTED, Some((playerId, player.name)))
               .processEvent(JoinResponseEvent(JoinResponse(player.id, "???")))._1
               .processEvent(NewFU(fu))._1
           this.copy(selectedClientState = CSState_Loaded(
