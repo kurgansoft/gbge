@@ -2,9 +2,9 @@ ThisBuild / version := "0.3.0"
 
 ThisBuild / scalaVersion := "3.3.5"
 
-val zioVersion = "2.1.25"
+val zioVersion = "2.1.26"
 val sttpVersion = "4.0.23"
-val tapirVersion = "1.13.17"
+val tapirVersion = "1.13.19"
 
 lazy val common = crossProject(JSPlatform, JVMPlatform).in(file("common")).
   settings(
@@ -31,7 +31,7 @@ lazy val backend = project.in(file("backend")).settings(
   ),
 ).dependsOn(common.jvm)
 
-val uiGlueCommitHash: String = "f8f723fca11ab25e8661d53385a0a59dcc4123d7"
+val uiGlueCommitHash: String = "a76fff2f395195a77be2ac0a74dbe4f3a6e0a9cb"
 
 lazy val ui = project.in(file("ui")).settings(
   name := "ui",
