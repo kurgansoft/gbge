@@ -1,9 +1,10 @@
 ThisBuild / version := "0.3.0"
-
 ThisBuild / scalaVersion := "3.3.5"
+ThisBuild / crossScalaVersions := List("3.3.5")
+ThisBuild / organization := "com.github.kurgansoft"
 
 val zioVersion = "2.1.26"
-val sttpVersion = "4.0.23"
+val sttpVersion = "4.0.25"
 val tapirVersion = "1.13.19"
 
 lazy val common = crossProject(JSPlatform, JVMPlatform).in(file("common")).
@@ -15,6 +16,7 @@ lazy val common = crossProject(JSPlatform, JVMPlatform).in(file("common")).
       "dev.zio" %%% "zio-schema-json" % "1.8.3", // it has to be the exact version that zio-http uses
       "com.softwaremill.sttp.client4" %%% "zio" % sttpVersion,
       "com.softwaremill.sttp.client4" %%% "zio-json" % sttpVersion,
+      "com.lihaoyi" %%% "pprint" % "0.9.6"
     )
   )
   .jsSettings(
@@ -26,8 +28,7 @@ lazy val backend = project.in(file("backend")).settings(
   libraryDependencies ++= Seq(
     "dev.zio" %% "zio-http" % "3.11.0",
     "com.lihaoyi" %% "os-lib" % "0.11.8",
-    "dev.zio" %% "zio-mock" % "1.0.0-RC12",
-    "com.lihaoyi" %% "pprint"  % "0.9.6"
+    "dev.zio" %% "zio-mock" % "1.0.0-RC12"
   ),
 ).dependsOn(common.jvm)
 
@@ -39,7 +40,6 @@ lazy val ui = project.in(file("ui")).settings(
   libraryDependencies ++= Seq(
     "org.scala-js" %%% "scalajs-dom" % "2.8.1",
     "com.github.japgolly.scalajs-react" %%% "core" % "2.1.3",
-    "com.lihaoyi" %%% "pprint"  % "0.9.6",
     "com.github.kurgansoft.uiglue" %%% "uiglue" % uiGlueCommitHash,
     "com.softwaremill.sttp.tapir" %%% "tapir-sttp-client4" % tapirVersion,
     "com.softwaremill.sttp.tapir" %%% "tapir-json-zio" % tapirVersion excludeAll(
