@@ -32,7 +32,7 @@ lazy val backend = project.in(file("backend")).settings(
   ),
 ).dependsOn(common.jvm)
 
-val uiGlueCommitHash: String = "a76fff2f395195a77be2ac0a74dbe4f3a6e0a9cb"
+val uiGlueCommitHash: String = "59ad8414ba2910d574eca9dac430a1546f43c409"
 
 lazy val ui = project.in(file("ui")).settings(
   name := "ui",
