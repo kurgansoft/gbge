@@ -1,7 +1,14 @@
-package gbge.ui.eps.portal
+package gbge.client.events_and_effects
 
+import gbge.client.events_and_effects
+import gbge.client.events_and_effects.{
+  ActionNeedsToBeSelectedEvent,
+  PerspectiveNeedsToBeSelectedEvent,
+  PortalClientEvent,
+  UniversePerspectivePairReceived
+}
 import gbge.shared.FrontendUniverse
-import gbge.shared.tm._
+import gbge.shared.tm.*
 import gbge.ui.Urls
 import org.scalajs.dom.WebSocket
 import uiglue.EventLoop.EventHandler
@@ -38,7 +45,7 @@ object PortalEffects {
       None
     }
     if (portalId.isDefined) {
-      ZIO.succeed(List(gbge.ui.eps.portal.PortalId(portalId.get)))
+      ZIO.succeed(List(events_and_effects.PortalId(portalId.get)))
     } else
       ZIO.succeed(List.empty)
   }

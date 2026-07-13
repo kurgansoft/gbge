@@ -1,23 +1,23 @@
 package gbge.ui.eps.spectator
 
 import gbge.client.*
+import gbge.client.events_and_effects.{ClientEffects, Connect, ConnectionBrokeDown, NewFU, ScreenEvent}
 import gbge.shared.FrontendUniverse
 import gbge.ui.ClientGameProps
-import gbge.ui.eps.SSEStatus
-import gbge.ui.eps.SSEStatus._
-import gbge.ui.eps.player.{CreateSSEStream, ScreenEvent}
+import gbge.ui.eps.ConnectionStatus
+import gbge.ui.eps.ConnectionStatus.*
 import gbge.ui.state.*
 import uiglue.EventLoop.EventHandler
 import uiglue.{Event, UIState}
-import zio.{UIO, ZIO}
+import zio.{Clock, UIO, ZIO}
 
 import scala.language.implicitConversions
 
 case class SpectatorState(
                            frontendUniverse: Option[FrontendUniverse] = None,
-                           sseStreamStatus: SSEStatus = NOT_YET_ESTABLISHED,
+                           sseStreamStatus: ConnectionStatus = NOT_YET_ESTABLISHED,
                            offlineState: OfflineState[Any] = EmptyOfflineState,
-                      ) extends UIState[uiglue.Event, Any] {
+                      ) extends UIState[uiglue.Event, Clock] {
 
   def getCurrentGame: Option[ClientGameProps[_,_]] = {
     val selectedGameNumber = frontendUniverse.flatMap(_.selectedGame)
@@ -27,7 +27,7 @@ case class SpectatorState(
   implicit def convert(state: SpectatorState): (SpectatorState, EventHandler[Event] => UIO[List[Event]]) =
     (state, _ => ZIO.succeed(List.empty))
 
-  override def processEvent(event: Event): (SpectatorState, EventHandler[Event] => UIO[List[Event]]) = event match {
+  override def processEvent(event: Event): (SpectatorState, EventHandler[Event] => ZIO[Clock, Nothing, List[Event]]) = event match {
     case NewFU(fu) =>
       val temp = this.copy(frontendUniverse = Some(fu), sseStreamStatus = CONNECTED)
       if (temp.getCurrentGame.isDefined) {
@@ -35,11 +35,11 @@ case class SpectatorState(
       } else {
         temp
       }
-    case CreateSSEStream => (this, eh => for {
+    case Connect => (this, eh => for {
       _ <- ZIO.log("SpectatorState is attempting to subscribe to SSE stream.")
       _ <- ClientEffects.createSSEConnection(eh).orDie
     } yield List.empty)
-    case ConnectionBrokeDown => this.copy(sseStreamStatus = BROKEN)
+    case ConnectionBrokeDown(_) => this.copy(sseStreamStatus = BROKEN)
     case se : ScreenEvent =>
       val temp = offlineState.handleScreenEvent(se, frontendUniverse)
       (this.copy(offlineState = temp._1), temp._2)

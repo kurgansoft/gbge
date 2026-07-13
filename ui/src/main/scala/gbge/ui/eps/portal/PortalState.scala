@@ -1,8 +1,8 @@
 package gbge.ui.eps.portal
 
-import gbge.client.NewFU
+import gbge.client.events_and_effects.{ActionNeedsToBeSelectedEvent, EventFromSubState, NewFU, PerspectiveNeedsToBeSelectedEvent, PortalClientEvent, PortalEffects, PortalId, Start, UniversePerspectivePairReceived}
 import gbge.shared.tm.{PlayerPerspective, SpectatorPerspective}
-import gbge.ui.eps.SSEStatus.CONNECTED
+import gbge.ui.eps.ConnectionStatus.CONNECTED
 import gbge.ui.eps.player.ClientState
 import gbge.ui.eps.spectator.SpectatorState
 import uiglue.{Event, EventLoop, UIState}
@@ -36,7 +36,8 @@ case class PortalState(
         perspective match {
           case SpectatorPerspective =>
             val tempState = SpectatorState(frontendUniverse = Some(frontendUniverse), sseStreamStatus = CONNECTED).processEvent(NewFU(frontendUniverse))._1
-            this.copy(clientState = Some(tempState), generalPortalClientState = EverythingIsSelected)
+//            this.copy(clientState = Some(tempState), generalPortalClientState = EverythingIsSelected)
+            this.copy(clientState = None, generalPortalClientState = EverythingIsSelected)
           case PlayerPerspective(playerId) =>
             val player = frontendUniverse.players.find(_.id == playerId)
             if (player.isDefined) {

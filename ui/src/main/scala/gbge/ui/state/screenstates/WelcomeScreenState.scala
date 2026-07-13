@@ -1,9 +1,9 @@
 package gbge.ui.state.screenstates
 
 import gbge.client.*
+import gbge.client.events_and_effects.{DispatchActionWithToken, ScreenEvent}
 import gbge.shared.FrontendUniverse
 import gbge.shared.actions.SelectGame
-import gbge.ui.eps.player.ScreenEvent
 import gbge.ui.state.OfflineState
 import uiglue.Event
 import zio.{UIO, ZIO}

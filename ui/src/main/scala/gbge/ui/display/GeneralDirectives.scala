@@ -1,6 +1,6 @@
 package gbge.ui.display
 
-import gbge.client.DispatchActionWithToken
+import gbge.client.events_and_effects.DispatchActionWithToken
 import gbge.shared.{FrontendGame, FrontendPlayer}
 import gbge.shared.actions.{LinkRoleToPlayer, UnlinkPlayerFromRole}
 import japgolly.scalajs.react.Callback

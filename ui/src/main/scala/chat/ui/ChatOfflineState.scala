@@ -1,7 +1,7 @@
 package chat.ui
 
+import gbge.client.events_and_effects.ScreenEvent
 import gbge.shared.FrontendUniverse
-import gbge.ui.eps.player.ScreenEvent
 import gbge.ui.state.OfflineState
 import uiglue.Event
 import zio.ZIO

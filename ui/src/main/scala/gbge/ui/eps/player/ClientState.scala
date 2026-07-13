@@ -1,26 +1,27 @@
 package gbge.ui.eps.player
 
 import gbge.client.*
-import gbge.shared.{FrontendPlayer, FrontendUniverse, GameRole}
+import gbge.client.events_and_effects.*
 import gbge.shared.actions.{GameAction, GeneralAction, KickPlayer}
+import gbge.shared.{FrontendPlayer, FrontendUniverse, GameRole}
 import gbge.ui.ClientGameProps
-import gbge.ui.eps.SSEStatus
-import gbge.ui.eps.SSEStatus._
+import gbge.ui.eps.ConnectionStatus.*
+import gbge.ui.eps.{ConnectionState, ConnectionStatus}
 import gbge.ui.state.OfflineState
 import gbge.ui.state.screenstates.{JoinScreenState, WelcomeScreenState}
 import gbge.ui.token.TokenService
 import uiglue.{Event, EventLoop, UIState}
-import zio.ZIO
+import zio.{Clock, ZIO}
 
-import scala.language.implicitConversions
+import scala.language.{implicitConversions, postfixOps}
 
 case class ClientState(
                         frontendUniverse: Option[FrontendUniverse] = None,
-                        sseStreamStatus: SSEStatus = NOT_YET_ESTABLISHED,
+                        connectionState: ConnectionState = ConnectionState(),
                         you: Option[(Int, String)] = None,
                         offlineState: OfflineState[TokenService] = JoinScreenState(),
                         tab: Int = 1, // 1 -> general, 2 -> meta, 3-> admin
-                      ) extends UIState[Event, TokenService] {
+                      ) extends UIState[Event, TokenService & Clock] {
 
   lazy val playerMaybe: Option[FrontendPlayer] = for {
     playerId <- you.map(_._1)
@@ -54,7 +55,7 @@ case class ClientState(
   implicit def convert(clientState: ClientState): (ClientState, EventLoop.EventHandler[Event] => ZIO[Any, Nothing, List[Event]]) =
     (clientState, _ => ZIO.succeed(List.empty))
 
-  override def processEvent(event: Event): (ClientState, EventLoop.EventHandler[Event] => ZIO[TokenService, Nothing, List[Event]]) = {
+  override def processEvent(event: Event): (ClientState, EventLoop.EventHandler[Event] => ZIO[TokenService & Clock, Nothing, List[Event]]) = {
     event match {
       case CheckForTokenEvent => (this, _ => for {
         events <- ClientEffects.recoverTokenEffect
@@ -69,7 +70,7 @@ case class ClientState(
             )
           }
         } else {
-          (this, _ => ZIO.succeed(List.empty))
+          this
         }
       case NewFU(fu) =>
         handleNewFU(fu)
@@ -79,7 +80,7 @@ case class ClientState(
         val x = offlineState.handleScreenEvent(sa, frontendUniverse, you.map(_._1))
         (this.copy(offlineState = x._1), _ => x._2)
       case PlayerRecovered(id, token) =>
-        (this.copy(you = Some(id, token)), eh => ZIO.succeed(List(CreateSSEStream)))
+        (this.copy(you = Some(id, token)), eh => ZIO.succeed(List(Connect)))
       case FailedToRecoverPlayer =>
         (this.copy(you = None), eh => ClientEffects.clearToken.as(List(Reload)))
       case LogOut =>
@@ -91,32 +92,35 @@ case class ClientState(
         } yield List.empty)
       case Reload =>
         (this, eh => for {
-          _ <- ZIO.log("...")
+          _ <- ZIO.log("...about to reload...")
           _ = org.scalajs.dom.window.location.reload()
         } yield List.empty)
       case JoinResponseEvent(joinResponse) =>
         val temp = this.copy(you = Some((joinResponse.id, joinResponse.token)))
         if (temp.offlineState.isInstanceOf[JoinScreenState]) {
-          (temp.copy(offlineState = WelcomeScreenState()), eh => ZIO.succeed(List(CreateSSEStream)))
+          (temp.copy(offlineState = WelcomeScreenState()), eh => ZIO.succeed(List(Connect)))
         } else {
           temp
         }
-      case CreateSSEStream =>
+      case Connect =>
         if (you.isDefined) {
           val token = you.map(_._2)
           (this, eh => for {
-            _ <- ClientEffects.createSSEConnection(eh, token).orDie
-          } yield List.empty)
+            _ <- ClientEffects.createSSEConnection(eh, token).orDie.forkDaemon
+          } yield List())
         } else {
           this
         }
-      case ConnectionBrokeDown =>
-        this.copy(sseStreamStatus = BROKEN)
-      case Reconnect =>
-        if (sseStreamStatus == BROKEN)
-          (this, _ => ZIO.succeed(List(CreateSSEStream)))
-        else
-          this
+      case ConnectionBrokeDown(timeStamp) => {
+        val newConnectionState = this.connectionState.addDisconnectionTimeStamp(timeStamp)
+        val eventList = if (newConnectionState.isItWorthToTryReconnecting) List(Connect) else List.empty
+        (this.copy(connectionState = newConnectionState), _ => for {
+          _ <- ZIO.when(eventList.nonEmpty)(ZIO.log("Connection just broke down, attempting to reconnect..."))
+          _ <- ZIO.when(eventList.isEmpty)(ZIO.log("Connection just broke down, but _NOT_ worth reconnecting."))
+        } yield eventList)
+      }
+      case ConnectionEstablished(timeStamp) =>
+        this.copy(connectionState = this.connectionState.transitionToConnectedStateWithTimeStamp(timeStamp))
       case CHANGE_TO_TAB(tab) =>
         this.copy(tab = tab)
       case _ =>
@@ -125,6 +129,7 @@ case class ClientState(
   }
 
   private def handleNewFU(fu: FrontendUniverse): (ClientState, EventLoop.EventHandler[Event] => ZIO[TokenService, Nothing, List[Event]]) = {
+    println("...new FU arrived...")
     val updatedYou = fu.players.find(_.id == this.you.get._1)
     val adminStatusLost: Boolean = false // you.exists(_.isAdmin) && updatedYou.exists(!_.isAdmin)
     val newTab: Int = tab match {
@@ -138,13 +143,13 @@ case class ClientState(
     if (updatedYou.isEmpty) {
       this.copy(frontendUniverse = Some(fu), offlineState = JoinScreenState(), tab = newTab)
     } else if (fu.game.isDefined) {
-      val temp = this.copy(tab = newTab, sseStreamStatus = CONNECTED)
+      val temp = this.copy(tab = newTab)
       gbge.ui.RG.registeredGames(fu.selectedGame.get).handleNewFU(temp, fu)
     }
     else {
       this.offlineState match {
-        case _ : WelcomeScreenState => this.copy(frontendUniverse = Some(fu), sseStreamStatus = CONNECTED, tab = newTab)
-        case _ => this.copy(frontendUniverse = Some(fu), sseStreamStatus = CONNECTED, offlineState = WelcomeScreenState(), tab = newTab)
+        case _ : WelcomeScreenState => this.copy(frontendUniverse = Some(fu), tab = newTab)
+        case _ => this.copy(frontendUniverse = Some(fu), offlineState = WelcomeScreenState(), tab = newTab)
       }
 
     }

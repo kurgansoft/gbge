@@ -1,9 +1,9 @@
-package gbge.client
+package gbge.client.events_and_effects
 
+import gbge.client.SseUtils
 import gbge.shared.actions.{GameAction, GeneralAction}
 import gbge.shared.{FrontendUniverse, JoinResponse}
 import gbge.ui.Urls
-import gbge.ui.eps.player.{FailedToRecoverPlayer, JoinResponseEvent, PlayerEvent, PlayerRecovered, RecoverTokenEvent}
 import gbge.ui.token.TokenService
 import sttp.capabilities
 import sttp.capabilities.zio.ZioStreams
@@ -12,7 +12,9 @@ import sttp.client4.ziojson.asJson
 import sttp.client4.{Request, ResponseException, UriContext, WebSocketStreamBackend, basicRequest}
 import uiglue.EventLoop
 import zio.json.*
-import zio.{Task, UIO, ZIO}
+import zio.{Clock, Task, UIO, ZIO}
+
+import java.time.temporal.TemporalField
 
 object ClientEffects {
 
@@ -57,7 +59,7 @@ object ClientEffects {
     } yield x
   }
 
-  def createSSEConnection(eventHandler: EventLoop.EventHandler[GeneralEvent], token: Option[String] = None): Task[Unit] = {
+  def createSSEConnection(eventHandler: EventLoop.EventHandler[GeneralEvent], token: Option[String] = None): ZIO[Clock, Throwable, Unit] = {
     val onMessage = (message: String) => {
       val jsonMessage = message.substring(6) // The SSE message starts with 'data: ' that is why the first few characters are discarded
       val ast = zio.json.ast.Json.decoder.decodeJson(jsonMessage).getOrElse(???)
@@ -71,11 +73,17 @@ object ClientEffects {
     }
 
     for {
+      clockService <- ZIO.service[Clock]
+      _ <- ZIO.log("Creating SSE connection...")
       response <- ZIO.fromFuture(_ => SseUtils.createFetchPromise(url, token).toFuture)
+      epochMillisOfConnection <- clockService.instant.map(_.toEpochMilli)
+      _ = eventHandler(ConnectionEstablished(epochMillisOfConnection))
       _ <- ZIO.fromFuture(ec => SseUtils.processStream(response.body, onMessage)(ec))
-        .mapError(error =>
-          eventHandler(ConnectionBrokeDown)
-          error
+        .tapError(error => for {
+          _ <- ZIO.log("connection error: " + error)
+          epochMillisOfDisconnection <- clockService.instant.map(_.toEpochMilli)
+          _ = eventHandler(ConnectionBrokeDown(epochMillisOfDisconnection))
+          } yield ()
         )
     } yield ()
   }

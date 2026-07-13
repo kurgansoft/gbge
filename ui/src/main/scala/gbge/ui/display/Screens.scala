@@ -1,11 +1,11 @@
 package gbge.ui.display
 
-import gbge.client.DispatchActionWithToken
+import gbge.client.events_and_effects.{CHANGE_TO_TAB, DispatchActionWithToken, GeneralEvent, LogOut, PlayerEvent}
 import japgolly.scalajs.react.*
 import japgolly.scalajs.react.vdom.all.*
 import gbge.shared.actions.*
 import gbge.shared.FrontendPlayer
-import gbge.ui.eps.player.{CHANGE_TO_TAB, ClientState, LogOut}
+import gbge.ui.eps.player.ClientState
 import gbge.ui.state.screenstates.*
 import japgolly.scalajs.react.vdom.Attr
 import uiglue.{Event, EventLoop}
@@ -90,7 +90,7 @@ object Screens {
     )
   }
 
-  def delegateAdminRoleScreen(state: ClientState, eventHandler: EventLoop.EventHandler[Event]) = {
+  def delegateAdminRoleScreen(state: ClientState, eventHandler: EventLoop.EventHandler[GeneralEvent | PlayerEvent]) = {
     div(
       button(`class`:="btn btn-primary", "<-", onClick --> Callback {
         eventHandler(CHANGE_TO_TAB(3))

@@ -1,4 +1,4 @@
-package gbge.ui.eps.player
+package gbge.client.events_and_effects
 
 import gbge.shared.JoinResponse
 
@@ -9,10 +9,8 @@ case class RecoverTokenEvent(token: String) extends PlayerEvent
 case class PlayerRecovered(id: Int, token: String) extends PlayerEvent
 case object FailedToRecoverPlayer extends PlayerEvent
 case class JoinResponseEvent(joinResponse: JoinResponse) extends PlayerEvent
-case object CreateSSEStream extends PlayerEvent
 case object Reload extends PlayerEvent
 case object LogOut extends PlayerEvent
-case object Reconnect extends PlayerEvent
 
 abstract class ScreenEvent extends PlayerEvent
 abstract class UIEvent extends PlayerEvent

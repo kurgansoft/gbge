@@ -1,7 +1,7 @@
 package chat.ui
 
 import chat.shared.{ChatAction, ChatGameProps, ClientChatGame, SendMessage}
-import gbge.client.DispatchActionWithToken
+import gbge.client.events_and_effects.DispatchActionWithToken
 import gbge.shared.FrontendPlayer
 import gbge.ui.ClientGameProps
 import gbge.ui.eps.player.ClientState

@@ -2,7 +2,7 @@ package gbge.ui.eps.spectator
 
 import gbge.shared.{FrontendPlayer, FrontendUniverse}
 import gbge.ui.display.Directives
-import gbge.ui.eps.SSEStatus._
+import gbge.ui.eps.ConnectionStatus._
 import japgolly.scalajs.react.vdom.TagOf
 import japgolly.scalajs.react.vdom.all.*
 import org.scalajs.dom.html.Div

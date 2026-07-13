@@ -53,7 +53,7 @@ object GameRoutes {
       withContext((player: Player) => for {
         _ <- ZIO.log(s"\tProvided action : $generalAction\n")
         s <- MainService.handleAction(generalAction, player.id).either
-        _ <- ZIO.log(s"Action handling succeded? $s")
+        _ <- ZIO.log(s"Action handling succeeded? $s")
       } yield ()
       ))
 
@@ -67,8 +67,13 @@ object GameRoutes {
       ))
 
   private def createStreamWithPlayerId(playerId: Option[Int]): ZStream[SubscriptionRef[Universe], Nothing, ServerSentEvent[String]] =
-    ZStream.serviceWithStream[SubscriptionRef[Universe]](uRef => uRef.changes.map(universe =>
+    (ZStream.serviceWithStream[SubscriptionRef[Universe]](uRef => uRef.changes.map(universe =>
       val fu = universe.getFrontendUniverseForPlayer(playerId)
+      println(s"stream for [$playerId] producing new element...")
       ServerSentEvent(fu.encode.toJson)
-    )) >>> ZPipeline.changes
+    )) >>> ZPipeline.changes)
+      .ensuring(playerId match {
+        case Some(id) => ZIO.log(s"SSE stream ended for player with id [$id].")
+        case None => ZIO.log("SSE stream ended for anonymous user.")
+      })
 }

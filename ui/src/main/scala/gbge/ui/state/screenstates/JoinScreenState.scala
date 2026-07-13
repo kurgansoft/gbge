@@ -1,8 +1,8 @@
 package gbge.ui.state.screenstates
 
 import gbge.client.*
+import gbge.client.events_and_effects.{ClientEffects, ScreenEvent}
 import gbge.shared.FrontendUniverse
-import gbge.ui.eps.player.ScreenEvent
 import gbge.ui.state.OfflineState
 import gbge.ui.token.TokenService
 import uiglue.Event

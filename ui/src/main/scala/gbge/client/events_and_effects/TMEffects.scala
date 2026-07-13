@@ -1,8 +1,22 @@
-package gbge.ui.eps.tm
+package gbge.client.events_and_effects
 
+import gbge.client.events_and_effects.{
+  ActionsHaveArrived,
+  RecoveredHash,
+  TMClientEvent,
+  TMStateArrived,
+  TimeMachineRetrievalFailed,
+  TmGotShrunk
+}
 import gbge.shared.FrontendUniverse
-import gbge.shared.tm.{Perspective, PlayerPerspective, PortalCoordinates, SpectatorPerspective}
+import gbge.shared.tm.{
+  Perspective,
+  PlayerPerspective,
+  PortalCoordinates,
+  SpectatorPerspective
+}
 import gbge.ui.Urls
+import gbge.ui.eps.tm.TimeMachineState
 import sttp.capabilities
 import sttp.capabilities.zio.ZioStreams
 import sttp.client4.impl.zio.FetchZioBackend
@@ -10,10 +24,10 @@ import sttp.client4.{Request, UriContext, WebSocketStreamBackend, basicRequest}
 import sttp.tapir.DecodeResult
 import sttp.tapir.client.sttp4.SttpClientInterpreter
 import uiglue.EventLoop.EventHandler
+import zio.*
 import zio.ZIO.*
 import zio.json.JsonDecoder
 import zio.json.ast.Json
-import zio.{ZIO, *}
 
 object TMEffects {
 

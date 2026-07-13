@@ -1,7 +1,7 @@
 package gbge.ui.state
 
+import gbge.client.events_and_effects.{PlayerEvent, ScreenEvent}
 import gbge.shared.{FrontendPlayer, FrontendUniverse}
-import gbge.ui.eps.player.{PlayerEvent, ScreenEvent}
 import uiglue.Event
 import zio.{UIO, ZIO}
 

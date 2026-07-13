@@ -1,8 +1,9 @@
 package gbge.ui.eps.portal
 
+import gbge.client.events_and_effects.{EventFromSubState, PortalClientEvent}
 import gbge.ui.eps.player.ClientState
 import gbge.ui.eps.spectator.{Screens0, SpectatorState}
-import japgolly.scalajs.react.vdom.all._
+import japgolly.scalajs.react.vdom.all.*
 import japgolly.scalajs.react.ScalaComponent
 import uiglue.{Event, EventLoop}
 

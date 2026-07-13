@@ -1,14 +1,15 @@
 package gbge.ui
 
-import gbge.ui.eps.player.{CheckForTokenEvent, ClientState, CreateSSEStream}
+import gbge.client.events_and_effects.{CheckForTokenEvent, Connect, TMClientEvent, TMStart}
+import gbge.ui.eps.player.ClientState
 import gbge.ui.eps.spectator.SpectatorState
-import gbge.ui.eps.tm.{TMClientEvent, TimeMachineState}
+import gbge.ui.eps.tm.TimeMachineState
 import gbge.ui.token.{LocalStorageBasedTokenService, TokenService}
 import org.scalajs.dom.html.Div
 import uiglue.EventLoop.EventHandler
 import uiglue.{Event, EventLoop, UIState}
 import zio.internal.stacktracer.Tracer
-import zio.{Unsafe, ZEnvironment, ZIO}
+import zio.{Clock, Unsafe, ZEnvironment, ZIO}
 
 import scala.concurrent.Future
 import scala.scalajs.js.annotation.JSExport
@@ -26,7 +27,7 @@ trait EntryPoint {
   def spectatorEntryPoint(div: Div): Unit = {
     val state = SpectatorState()
 
-    val renderFunction: (UIState[Event, Any], EventHandler[Event]) => Unit =
+    val renderFunction: (UIState[Event, Clock], EventHandler[Event]) => Unit =
       (state, eventHandler) => {
         val s = state.asInstanceOf[SpectatorState]
         gbge.ui.display.Displayer
@@ -34,7 +35,8 @@ trait EntryPoint {
           .renderIntoDOM(div)
       }
 
-    val loop = EventLoop.createLoop(state, renderFunction, List(CreateSSEStream))
+    val loop = EventLoop.createLoop(state, renderFunction, List(Connect))
+      .provideEnvironment(ZEnvironment(Clock.ClockLive))
 
     Future {
       zio.Runtime.default.unsafe.run(ZIO.log("spectator entry point invoked") *> loop)
@@ -45,7 +47,7 @@ trait EntryPoint {
   def playerEntryPoint(div: Div): Unit = {
     val state = ClientState()
 
-    val renderFunction: (UIState[Event, TokenService], EventHandler[Event]) => Unit =
+    val renderFunction: (UIState[Event, TokenService & Clock], EventHandler[Event]) => Unit =
       (state, eventHandler) => {
         val s = state.asInstanceOf[ClientState]
         gbge.ui.display.Displayer
@@ -54,7 +56,7 @@ trait EntryPoint {
       }
 
     val loop = EventLoop.createLoop(state, renderFunction, List(CheckForTokenEvent))
-      .provideEnvironment(tokenService)
+      .provideEnvironment(tokenService.add(Clock.ClockLive))
     
     Future {
       zio.Runtime.default.unsafe.run(ZIO.log("player entry point invoked") *> loop)
@@ -74,7 +76,7 @@ trait EntryPoint {
       }
     }
 
-    val loop = EventLoop.createLoop(state, renderFunction, List(gbge.ui.eps.tm.Start))
+    val loop = EventLoop.createLoop(state, renderFunction, List(TMStart))
 
     Future {
       zio.Runtime.default.unsafe.run(ZIO.log("time machine entry point invoked") *> loop)

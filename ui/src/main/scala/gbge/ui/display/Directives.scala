@@ -1,6 +1,7 @@
 package gbge.ui.display
 
-import gbge.ui.eps.player.{CHANGE_TO_TAB, ClientState}
+import gbge.client.events_and_effects.CHANGE_TO_TAB
+import gbge.ui.eps.player.ClientState
 import japgolly.scalajs.react.{Callback, ReactEventFrom}
 import japgolly.scalajs.react.vdom.all._
 import org.scalajs.dom.HTMLSelectElement

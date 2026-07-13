@@ -1,10 +1,11 @@
 package gbge.ui.eps.tm
 
-import gbge.client.NewFU
+import gbge.client.events_and_effects.*
 import gbge.shared.{FrontendPlayer, JoinResponse}
 import gbge.shared.tm.*
-import gbge.ui.eps.SSEStatus.CONNECTED
-import gbge.ui.eps.player.{ClientState, JoinResponseEvent}
+import gbge.ui.eps.ConnectionState
+import gbge.ui.eps.ConnectionStatus.CONNECTED
+import gbge.ui.eps.player.ClientState
 import gbge.ui.eps.spectator.SpectatorState
 import uiglue.EventLoop.EventHandler
 import uiglue.{Event, UIState}
@@ -135,7 +136,7 @@ case class TimeMachineState(
   override def processEvent(event: TMClientEvent): (TimeMachineState, EventHandler[TMClientEvent] => UIO[List[TMClientEvent]]) = {
     val x: (TimeMachineState, EventHandler[TMClientEvent] => UIO[List[TMClientEvent]]) =
       event match {
-        case Start =>
+        case TMStart =>
           (this, TMEffects.recoverFromHash)
         case ActionsHaveArrived(actionsAndInvokers) =>
           this.copy(status = LOADED, actionsAndInvokers = actionsAndInvokers)
@@ -148,7 +149,7 @@ case class TimeMachineState(
         case TMStateArrived(number, PlayerPerspective(playerId), fu) =>
           val player = fu.players.find(_.id == playerId).get
           val clientState: ClientState =
-            ClientState(Some(fu), CONNECTED, Some((playerId, player.name)))
+            ClientState(Some(fu), ConnectionState(CONNECTED), Some((playerId, player.name)))
               .processEvent(JoinResponseEvent(JoinResponse(player.id, "???")))._1
               .processEvent(NewFU(fu))._1
           this.copy(selectedClientState = CSState_Loaded(

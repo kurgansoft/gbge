@@ -1,5 +1,6 @@
 package gbge.ui.eps.tm
 
+import gbge.client.events_and_effects.{ActionSelected, EventFromSelectedPerspective, PerspectiveSelected, ResetTmToNumber, SAVE, SetComponentDisplayMode, TMClientEvent}
 import gbge.shared.tm.{ActionInvokerAndPlayers, Perspective, PlayerPerspective, SpectatorPerspective}
 import gbge.ui.eps.player.ClientState
 import gbge.ui.eps.spectator.{Screens0, SpectatorState}

@@ -1,8 +1,9 @@
 package gbge.ui.display
 
-import gbge.ui.eps.SSEStatus
-import gbge.ui.eps.SSEStatus.{BROKEN, NOT_YET_ESTABLISHED}
-import gbge.ui.eps.player.{ClientState, Reconnect}
+import gbge.client.events_and_effects.{Connect, ConnectionEstablished}
+import gbge.ui.eps.ConnectionStatus
+import gbge.ui.eps.ConnectionStatus.{BROKEN, NOT_YET_ESTABLISHED}
+import gbge.ui.eps.player.ClientState
 import gbge.ui.eps.spectator.{Screens0, SpectatorState}
 import japgolly.scalajs.react.vdom.TagOf
 import japgolly.scalajs.react.vdom.all.*
@@ -32,15 +33,15 @@ object Displayer {
     if (state.you.isEmpty)
       Screens.joinScreen(state, eventHandler)
     else {
-      state.sseStreamStatus match {
+      state.connectionState.status match {
         case NOT_YET_ESTABLISHED => div(h1("Connection is NOT YET ESTABLISHED", color:="yellow"))
         case BROKEN => div(
           h1("Connection is BROKEN", color:="yellow"),
           button(`class`:="btn btn-primary", "RECONNECT", onClick --> Callback {
-            eventHandler(Reconnect)
+            eventHandler(Connect)
           })
         )
-        case SSEStatus.CONNECTED => {
+        case ConnectionStatus.CONNECTED => {
           val stateDiv = state.tab match {
             case 1 =>
               if (state.frontendUniverse.isEmpty) {
