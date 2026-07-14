@@ -59,7 +59,7 @@ object ClientEffects {
     } yield x
   }
 
-  def createSSEConnection(eventHandler: EventLoop.EventHandler[GeneralEvent], token: Option[String] = None): ZIO[Clock, Throwable, Unit] = {
+  def createSSEConnection(eventHandler: EventLoop.EventHandler[GeneralEvent], token: Option[String] = None, comment: Option[String] = None): ZIO[Clock, Throwable, Unit] = {
     val onMessage = (message: String) => {
       val jsonMessage = message.substring(6) // The SSE message starts with 'data: ' that is why the first few characters are discarded
       val ast = zio.json.ast.Json.decoder.decodeJson(jsonMessage).getOrElse(???)
@@ -71,11 +71,16 @@ object ClientEffects {
       case Some(_) => Urls.nonPublicEvents
       case None => Urls.publicEvents
     }
+    
+    val urlWithComment = comment match {
+      case Some(c) => url + s"?comment=$c"
+      case None => url
+    }
 
     for {
       clockService <- ZIO.service[Clock]
       _ <- ZIO.log("Creating SSE connection...")
-      response <- ZIO.fromFuture(_ => SseUtils.createFetchPromise(url, token).toFuture)
+      response <- ZIO.fromFuture(_ => SseUtils.createFetchPromise(urlWithComment, token).toFuture)
       epochMillisOfConnection <- clockService.instant.map(_.toEpochMilli)
       _ = eventHandler(ConnectionEstablished(epochMillisOfConnection))
       _ <- ZIO.fromFuture(ec => SseUtils.processStream(response.body, onMessage)(ec))

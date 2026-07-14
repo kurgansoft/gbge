@@ -26,16 +26,18 @@ object GameRoutes {
       } yield u.getFrontendUniverseForPlayer(None).encode.toJsonPretty)
   )
 
-  val sseRoute: Route[SubscriptionRef[Universe], Nothing] = GeneralEndpoints.sse.implement(_ =>
+  val sseRoute: Route[SubscriptionRef[Universe], Nothing] = GeneralEndpoints.sse.implement(optionalComment =>
     for {
+      _ <- ZIO.when(optionalComment.nonEmpty)(ZIO.log("Comment during anonymous SSE subscription:\n\t" + optionalComment.get))
       ref <- ZIO.service[SubscriptionRef[Universe]]
       aa = createStreamWithPlayerId(None).provideEnvironment(ZEnvironment(ref))
     } yield aa
   )
 
-  val sseRouteWithAuthentication: Route[SubscriptionRef[Universe] & Player, Nothing] = GeneralEndpoints.sseWithAuthentication.implement(_ =>
+  val sseRouteWithAuthentication: Route[SubscriptionRef[Universe] & Player, Nothing] = GeneralEndpoints.sseWithAuthentication.implement(optionalComment =>
     withContext((player: Player) => for {
       _ <- ZIO.log("The player trying to subscribe to SSE stream is: " + player)
+      _ <- ZIO.when(optionalComment.nonEmpty)(ZIO.log("Comment during SSE subscription:\n\t" + optionalComment.get))
       ref <- ZIO.service[SubscriptionRef[Universe]]
       aa = createStreamWithPlayerId(Some(player.id)).provideEnvironment(ZEnvironment(ref))
     } yield aa)

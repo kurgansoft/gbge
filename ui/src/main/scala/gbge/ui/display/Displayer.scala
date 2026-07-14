@@ -38,7 +38,7 @@ object Displayer {
         case BROKEN => div(
           h1("Connection is BROKEN", color:="yellow"),
           button(`class`:="btn btn-primary", "RECONNECT", onClick --> Callback {
-            eventHandler(Connect)
+            eventHandler(Connect(Some("MANUAL RECONNECT")))
           })
         )
         case ConnectionStatus.CONNECTED => {

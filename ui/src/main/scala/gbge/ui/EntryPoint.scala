@@ -1,6 +1,6 @@
 package gbge.ui
 
-import gbge.client.events_and_effects.{CheckForTokenEvent, Connect, TMClientEvent, TMStart}
+import gbge.client.events_and_effects.{CheckForTokenEvent, Connect, SetupEventListeners, TMClientEvent, TMStart}
 import gbge.ui.eps.player.ClientState
 import gbge.ui.eps.spectator.SpectatorState
 import gbge.ui.eps.tm.TimeMachineState
@@ -35,7 +35,7 @@ trait EntryPoint {
           .renderIntoDOM(div)
       }
 
-    val loop = EventLoop.createLoop(state, renderFunction, List(Connect))
+    val loop = EventLoop.createLoop(state, renderFunction, List(Connect()))
       .provideEnvironment(ZEnvironment(Clock.ClockLive))
 
     Future {
@@ -55,7 +55,7 @@ trait EntryPoint {
           .renderIntoDOM(div)
       }
 
-    val loop = EventLoop.createLoop(state, renderFunction, List(CheckForTokenEvent))
+    val loop = EventLoop.createLoop(state, renderFunction, List(SetupEventListeners, CheckForTokenEvent))
       .provideEnvironment(tokenService.add(Clock.ClockLive))
     
     Future {

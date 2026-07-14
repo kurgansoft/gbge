@@ -35,9 +35,9 @@ case class SpectatorState(
       } else {
         temp
       }
-    case Connect => (this, eh => for {
+    case Connect(optionalComment) => (this, eh => for {
       _ <- ZIO.log("SpectatorState is attempting to subscribe to SSE stream.")
-      _ <- ClientEffects.createSSEConnection(eh).orDie
+      _ <- ClientEffects.createSSEConnection(eh, comment = optionalComment).orDie
     } yield List.empty)
     case ConnectionBrokeDown(_) => this.copy(sseStreamStatus = BROKEN)
     case se : ScreenEvent =>

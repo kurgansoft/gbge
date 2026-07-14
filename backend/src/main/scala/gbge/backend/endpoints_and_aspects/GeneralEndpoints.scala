@@ -12,16 +12,22 @@ import zio.http.endpoint.{AuthType, Endpoint}
 import zio.schema.Schema
 
 object GeneralEndpoints {
+
+  private val eventStreamHeader = HttpCodec.header(Header.Accept).const(Header.Accept(MediaType.text.`event-stream`))
   
   val sse =
     Endpoint(RoutePattern.GET / "publicEvents")
-      .inCodec(HttpCodec.header(Header.Accept).const(Header.Accept(MediaType.text.`event-stream`)))
+      .inCodec(
+        eventStreamHeader ++ HttpCodec.query[String]("comment").optional
+      )
       .outStream[ServerSentEvent[String]](MediaType.text.`event-stream`)
 
   val sseWithAuthentication =
     Endpoint(RoutePattern.GET / "events")
       .auth(AuthType.Bearer)
-      .inCodec(HttpCodec.header(Header.Accept).const(Header.Accept(MediaType.text.`event-stream`)))
+      .inCodec(
+        eventStreamHeader ++ HttpCodec.query[String]("comment").optional
+      )
       .outStream[ServerSentEvent[String]](MediaType.text.`event-stream`)
 
   val joinEndpoint = Endpoint(RoutePattern.POST / "join")

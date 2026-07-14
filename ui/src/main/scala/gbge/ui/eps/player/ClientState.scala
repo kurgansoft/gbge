@@ -57,6 +57,20 @@ case class ClientState(
 
   override def processEvent(event: Event): (ClientState, EventLoop.EventHandler[Event] => ZIO[TokenService & Clock, Nothing, List[Event]]) = {
     event match {
+      case VisibilityChanged => (this,  eh => {
+        val visibilityState = org.scalajs.dom.document.visibilityState
+        val eventList = if (connectionState.status == BROKEN && visibilityState == "visible" && connectionState.isItWorthToTryReconnecting) {
+          List(Connect(Some("RECONNECTING AFTER BROKEN CONNECTION AS SCREEN IS VISIBLE AGAIN")))
+        } else
+          List.empty
+        ZIO.succeed(eventList)
+      })
+      case SetupEventListeners => (this,  eh => for {
+        _ <- ZIO.log("Setting up event listener for visibility change DOM event.")
+        _ = org.scalajs.dom.window.addEventListener("visibilitychange", (event: org.scalajs.dom.Event) =>
+          eh(VisibilityChanged)
+        )
+      } yield List.empty)
       case CheckForTokenEvent => (this, _ => for {
         events <- ClientEffects.recoverTokenEffect
       } yield events)
@@ -80,7 +94,7 @@ case class ClientState(
         val x = offlineState.handleScreenEvent(sa, frontendUniverse, you.map(_._1))
         (this.copy(offlineState = x._1), _ => x._2)
       case PlayerRecovered(id, token) =>
-        (this.copy(you = Some(id, token)), eh => ZIO.succeed(List(Connect)))
+        (this.copy(you = Some(id, token)), eh => ZIO.succeed(List(Connect(Some("CONNECTING WITH RECOVERED TOKEN")))))
       case FailedToRecoverPlayer =>
         (this.copy(you = None), eh => ClientEffects.clearToken.as(List(Reload)))
       case LogOut =>
@@ -98,22 +112,22 @@ case class ClientState(
       case JoinResponseEvent(joinResponse) =>
         val temp = this.copy(you = Some((joinResponse.id, joinResponse.token)))
         if (temp.offlineState.isInstanceOf[JoinScreenState]) {
-          (temp.copy(offlineState = WelcomeScreenState()), eh => ZIO.succeed(List(Connect)))
+          (temp.copy(offlineState = WelcomeScreenState()), eh => ZIO.succeed(List(Connect())))
         } else {
           temp
         }
-      case Connect =>
+      case Connect(optionalMessage) =>
         if (you.isDefined) {
           val token = you.map(_._2)
           (this, eh => for {
-            _ <- ClientEffects.createSSEConnection(eh, token).orDie.forkDaemon
+            _ <- ClientEffects.createSSEConnection(eh, token, optionalMessage).orDie.forkDaemon
           } yield List())
         } else {
           this
         }
       case ConnectionBrokeDown(timeStamp) => {
         val newConnectionState = this.connectionState.addDisconnectionTimeStamp(timeStamp)
-        val eventList = if (newConnectionState.isItWorthToTryReconnecting) List(Connect) else List.empty
+        val eventList = if (newConnectionState.isItWorthToTryReconnecting) List(Connect(Some("STANDARD RECONNECTION AFTER DISCONNECT"))) else List.empty
         (this.copy(connectionState = newConnectionState), _ => for {
           _ <- ZIO.when(eventList.nonEmpty)(ZIO.log("Connection just broke down, attempting to reconnect..."))
           _ <- ZIO.when(eventList.isEmpty)(ZIO.log("Connection just broke down, but _NOT_ worth reconnecting."))

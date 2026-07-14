@@ -8,7 +8,7 @@ sealed trait GeneralEvent extends Event
 
 case class NewFU(fu: FrontendUniverse) extends GeneralEvent
 
-case object Connect extends GeneralEvent
+case class Connect(message: Option[String] = None) extends GeneralEvent
 case class ConnectionBrokeDown(timeStamp: Long) extends GeneralEvent
 case class ConnectionEstablished(timeStamp: Long) extends GeneralEvent
 

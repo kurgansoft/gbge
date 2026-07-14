@@ -4,6 +4,7 @@ import gbge.shared.JoinResponse
 
 sealed trait PlayerEvent extends uiglue.Event
 case class JoinWithName(name: String) extends PlayerEvent
+case object SetupEventListeners extends PlayerEvent
 case object CheckForTokenEvent extends PlayerEvent
 case class RecoverTokenEvent(token: String) extends PlayerEvent
 case class PlayerRecovered(id: Int, token: String) extends PlayerEvent
@@ -11,6 +12,7 @@ case object FailedToRecoverPlayer extends PlayerEvent
 case class JoinResponseEvent(joinResponse: JoinResponse) extends PlayerEvent
 case object Reload extends PlayerEvent
 case object LogOut extends PlayerEvent
+case object VisibilityChanged extends PlayerEvent
 
 abstract class ScreenEvent extends PlayerEvent
 abstract class UIEvent extends PlayerEvent
