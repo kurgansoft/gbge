@@ -4,8 +4,8 @@ ThisBuild / crossScalaVersions := List("3.3.5")
 ThisBuild / organization := "com.github.kurgansoft"
 
 val zioVersion = "2.1.26"
-val sttpVersion = "4.0.26"
-val tapirVersion = "1.13.27"
+val sttpVersion = "4.0.27"
+val tapirVersion = "1.13.32"
 
 lazy val common = crossProject(JSPlatform, JVMPlatform).in(file("common")).
   settings(
@@ -13,7 +13,7 @@ lazy val common = crossProject(JSPlatform, JVMPlatform).in(file("common")).
     libraryDependencies ++= Seq(
       "dev.zio" %%% "zio" % zioVersion,
       "dev.zio" %%% "zio-test" % zioVersion % Test,
-      "dev.zio" %%% "zio-schema-json" % "1.8.3", // it has to be the exact version that zio-http uses
+      "dev.zio" %%% "zio-schema-json" % "1.8.7", // it has to be the exact version that zio-http uses
       "com.softwaremill.sttp.client4" %%% "zio" % sttpVersion,
       "com.softwaremill.sttp.client4" %%% "zio-json" % sttpVersion,
       "com.lihaoyi" %%% "pprint" % "0.9.6"
@@ -26,7 +26,7 @@ lazy val common = crossProject(JSPlatform, JVMPlatform).in(file("common")).
 lazy val backend = project.in(file("backend")).settings(
   name := "backend",
   libraryDependencies ++= Seq(
-    "dev.zio" %% "zio-http" % "3.11.0",
+    "dev.zio" %% "zio-http" % "3.11.6",
     "com.lihaoyi" %% "os-lib" % "0.11.8",
     "dev.zio" %% "zio-mock" % "1.0.0-RC12"
   ),
