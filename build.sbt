@@ -1,6 +1,5 @@
 ThisBuild / version := "0.3.0"
-ThisBuild / scalaVersion := "3.3.5"
-ThisBuild / crossScalaVersions := List("3.3.5")
+ThisBuild / scalaVersion := "3.9.0"
 ThisBuild / organization := "com.github.kurgansoft"
 
 val zioVersion = "2.1.27"

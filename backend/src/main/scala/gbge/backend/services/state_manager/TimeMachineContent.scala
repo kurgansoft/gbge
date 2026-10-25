@@ -22,7 +22,7 @@ case class TimeMachineContent(
         Right(
           this.copy(
             actionStack = actionStack.appended((action, playerId)),
-            universes.appended(newUniverse)
+            universes = universes.appended(newUniverse)
           ),
           effect
         )
