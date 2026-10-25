@@ -13,34 +13,59 @@ import uiglue.{Event, EventLoop}
 
 object Displayer {
 
-  val rootComponent = ScalaComponent.builder[(ClientState, uiglue.EventLoop.EventHandler[Event])]("RootComponent")
-    .render_P({case (clientState, eventHandler) =>
-      div(position:= "fixed", top:="0px", bottom:="0px", left:="0px", right:="0px",
+  val rootComponent = ScalaComponent
+    .builder[(ClientState, uiglue.EventLoop.EventHandler[Event])](
+      "RootComponent"
+    )
+    .render_P({ case (clientState, eventHandler) =>
+      div(
+        position := "fixed",
+        top := "0px",
+        bottom := "0px",
+        left := "0px",
+        right := "0px",
         displayer(clientState, eventHandler)
       )
     })
     .build
 
-  val spectatorRootComponent = ScalaComponent.builder[(SpectatorState, EventLoop.EventHandler[Event])]("SpectatorRootComponent")
-    .render_P({case (clientState, eventHandler) =>
-      div(position:= "fixed", top:="0px", bottom:="0px", left:="0px", right:="0px",
+  val spectatorRootComponent = ScalaComponent
+    .builder[(SpectatorState, EventLoop.EventHandler[Event])](
+      "SpectatorRootComponent"
+    )
+    .render_P({ case (clientState, eventHandler) =>
+      div(
+        position := "fixed",
+        top := "0px",
+        bottom := "0px",
+        left := "0px",
+        right := "0px",
         Screens0.root(clientState, eventHandler)
       )
     })
     .build
 
-  def displayer(state: ClientState, eventHandler: EventLoop.EventHandler[Event]): TagOf[Div] = {
+  def displayer(
+      state: ClientState,
+      eventHandler: EventLoop.EventHandler[Event]
+  ): TagOf[Div] = {
     if (state.you.isEmpty)
       Screens.joinScreen(state, eventHandler)
     else {
       state.connectionState.status match {
-        case NOT_YET_ESTABLISHED => div(h1("Connection is NOT YET ESTABLISHED", color:="yellow"))
-        case BROKEN => div(
-          h1("Connection is BROKEN", color:="yellow"),
-          button(`class`:="btn btn-primary", "RECONNECT", onClick --> Callback {
-            eventHandler(Connect(Some("MANUAL RECONNECT")))
-          })
-        )
+        case NOT_YET_ESTABLISHED =>
+          div(h1("Connection is NOT YET ESTABLISHED", color := "yellow"))
+        case BROKEN =>
+          div(
+            h1("Connection is BROKEN", color := "yellow"),
+            button(
+              `class` := "btn btn-primary",
+              "RECONNECT",
+              onClick --> Callback {
+                eventHandler(Connect(Some("MANUAL RECONNECT")))
+              }
+            )
+          )
         case ConnectionStatus.CONNECTED => {
           val stateDiv = state.tab match {
             case 1 =>
@@ -56,7 +81,14 @@ object Displayer {
             case 5 => Screens.playerRoleScreen(state, eventHandler)
             case 6 => Screens.delegateAdminRoleScreen(state, eventHandler)
           }
-          div(position := "absolute", top := "0px", bottom := "0px", left := "0px", right := "0px", display := "flex", flexDirection := "column",
+          div(
+            position := "absolute",
+            top := "0px",
+            bottom := "0px",
+            left := "0px",
+            right := "0px",
+            display := "flex",
+            flexDirection := "column",
             Directives.tabMenu(state, eventHandler)(flex := "0 1 auto"),
             stateDiv(flex := "1 1 auto")
           )

@@ -3,9 +3,9 @@ package gbge.ui.token
 import zio.{IO, ZIO}
 
 object LocalStorageBasedTokenService extends TokenService {
-  
+
   private val tokenKeyName = "token"
-  
+
   override def saveToken(token: String): IO[Nothing, Unit] = for {
     _ <- ZIO.log("Saving token to local storage.")
     _ = org.scalajs.dom.window.localStorage.setItem(tokenKeyName, token)
@@ -13,9 +13,10 @@ object LocalStorageBasedTokenService extends TokenService {
 
   override val getToken: IO[Nothing, Option[String]] = for {
     _ <- ZIO.log("Attempting to get token from local storage.")
-    token: Option[String] = org.scalajs.dom.window.localStorage.getItem(tokenKeyName) match {
+    token: Option[String] = org.scalajs.dom.window.localStorage
+      .getItem(tokenKeyName) match {
       case null | "" => None
-      case value => Some(value)
+      case value     => Some(value)
     }
   } yield token
 

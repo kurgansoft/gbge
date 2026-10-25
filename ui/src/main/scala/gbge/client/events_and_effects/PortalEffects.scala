@@ -17,23 +17,28 @@ import zio.{UIO, ZIO}
 import scala.util.Try
 
 object PortalEffects {
-  def setUpPortalWSConnection(id: Int): EventHandler[PortalClientEvent] => UIO[List[PortalClientEvent]] = eventHandler => {
-    val portalSocket = new WebSocket(Urls.portalSocketURLForClients + id.toString)
-    portalSocket.onmessage = message => {
+  def setUpPortalWSConnection(
+      id: Int
+  ): EventHandler[PortalClientEvent] => UIO[List[PortalClientEvent]] =
+    eventHandler => {
+      val portalSocket = new WebSocket(
+        Urls.portalSocketURLForClients + id.toString
+      )
+      portalSocket.onmessage = message => {
 //      val payload: PortalMessage = upickle.default.read[PortalMessage](message.data.toString)
-      val payload: PortalMessage = ???
-      payload match {
-        case PortalMessageWithPayload(rawFU, perspective) =>
-          val fu: FrontendUniverse = ???
-          eventHandler(UniversePerspectivePairReceived(perspective, fu))
-        case ActionNeedsToBeSelected =>
-          eventHandler(ActionNeedsToBeSelectedEvent)
-        case PerspectiveNeedsToBeSelected(selectedAction) =>
-          eventHandler(PerspectiveNeedsToBeSelectedEvent(selectedAction))
+        val payload: PortalMessage = ???
+        payload match {
+          case PortalMessageWithPayload(rawFU, perspective) =>
+            val fu: FrontendUniverse = ???
+            eventHandler(UniversePerspectivePairReceived(perspective, fu))
+          case ActionNeedsToBeSelected =>
+            eventHandler(ActionNeedsToBeSelectedEvent)
+          case PerspectiveNeedsToBeSelected(selectedAction) =>
+            eventHandler(PerspectiveNeedsToBeSelectedEvent(selectedAction))
+        }
       }
+      ZIO.succeed(List.empty)
     }
-    ZIO.succeed(List.empty)
-  }
 
   val retrievePortalIdFromHash: UIO[List[PortalClientEvent]] = {
     val hash: String = org.scalajs.dom.window.location.hash

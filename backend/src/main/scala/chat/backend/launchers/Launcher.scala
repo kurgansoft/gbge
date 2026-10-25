@@ -16,8 +16,8 @@ import zio.{
 }
 
 object Launcher extends ZIOAppDefault {
-  
-  private val games: Seq[BackendGameProps[_,_]] = Seq(BackendChatGameProps)
+
+  private val games: Seq[BackendGameProps[_, _]] = Seq(BackendChatGameProps)
 
   private val gl = GenericLauncher(games)
 
@@ -27,7 +27,7 @@ object Launcher extends ZIOAppDefault {
 //    )),
 //    timeMachineEnabled = true
 //  )
-  
+
   override def run: ZIO[Scope & ZIOAppArgs, Any, Unit] = for {
     args <- ZIO.serviceWith[ZIOAppArgs](_.getArgs)
     config <- GameConfig.resolveConfig
@@ -41,4 +41,3 @@ object Launcher extends ZIOAppDefault {
     Runtime.setConfigProvider(ConfigProvider.propsProvider)
 
 }
-

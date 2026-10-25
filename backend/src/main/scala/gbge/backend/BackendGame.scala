@@ -9,19 +9,33 @@ import scala.language.implicitConversions
 
 trait BackendGame[GA <: GameAction, FG <: FrontendGame[GA]] extends Game {
 
-  implicit def cnToTuple2(result: UniverseResult): (Any, UniverseResult) = (this, result)
+  implicit def cnToTuple2(result: UniverseResult): (Any, UniverseResult) =
+    (this, result)
 
   val state: GameState
 
   val noOfPlayers: Int
 
-  def increaseRoomSize(): Either[Failure, (BackendGame[_ <: GA, _ <: FG], IO[Nothing, Option[Action]])] =
-    Left(GeneralFailure("Increasing the room size is not supported in this game!"))
+  def increaseRoomSize(): Either[
+    Failure,
+    (BackendGame[_ <: GA, _ <: FG], IO[Nothing, Option[Action]])
+  ] =
+    Left(
+      GeneralFailure("Increasing the room size is not supported in this game!")
+    )
 
-  def decreaseRoomSize(): Either[Failure, (BackendGame[_ <: GA, _ <: FG], IO[Nothing, Option[Action]])] =
-    Left(GeneralFailure("Decreasing the room size is not supported in this game!"))
+  def decreaseRoomSize(): Either[
+    Failure,
+    (BackendGame[_ <: GA, _ <: FG], IO[Nothing, Option[Action]])
+  ] =
+    Left(
+      GeneralFailure("Decreasing the room size is not supported in this game!")
+    )
 
-  def reduce(gameAction: GameAction, invoker: Player): Either[Failure, (BackendGame[_ <: GA, _ <: FG], IO[Nothing, Option[Action]])]
+  def reduce(gameAction: GameAction, invoker: Player): Either[
+    Failure,
+    (BackendGame[_ <: GA, _ <: FG], IO[Nothing, Option[Action]])
+  ]
 
   def toFrontendGame(role: Option[Int] = None): FG
 

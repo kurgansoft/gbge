@@ -10,12 +10,17 @@ import uiglue.{Event, EventLoop}
 
 object Screens0 {
 
-  def root(state: SpectatorState, eventHandler: EventLoop.EventHandler[Event]): TagOf[Div] = {
-    implicit val players: List[FrontendPlayer] = state.frontendUniverse.map(_.players.toList).orNull
+  def root(
+      state: SpectatorState,
+      eventHandler: EventLoop.EventHandler[Event]
+  ): TagOf[Div] = {
+    implicit val players: List[FrontendPlayer] =
+      state.frontendUniverse.map(_.players.toList).orNull
 
     state.sseStreamStatus match {
-      case NOT_YET_ESTABLISHED => div(h1("Connection is NOT YET ESTABLISHED", color:="yellow"))
-      case BROKEN => div(h1("Connection is BROKEN", color:="yellow"))
+      case NOT_YET_ESTABLISHED =>
+        div(h1("Connection is NOT YET ESTABLISHED", color := "yellow"))
+      case BROKEN    => div(h1("Connection is BROKEN", color := "yellow"))
       case CONNECTED =>
         if (state.frontendUniverse.flatMap(_.game).isEmpty) {
           if (state.frontendUniverse.isDefined)
@@ -23,28 +28,55 @@ object Screens0 {
           else
             div()
         } else {
-          gbge.ui.RG.registeredGames(state.frontendUniverse.get.selectedGame.get).spectatorDisplayer(state, eventHandler)
+          gbge.ui.RG
+            .registeredGames(state.frontendUniverse.get.selectedGame.get)
+            .spectatorDisplayer(state, eventHandler)
         }
     }
   }
 
-  def gameDisplayer(selectedGame: Int, encodedGameState: String)(implicit players: List[FrontendPlayer]) = {
+  def gameDisplayer(selectedGame: Int, encodedGameState: String)(implicit
+      players: List[FrontendPlayer]
+  ) = {
     div("GAME DISPLAYER - maybe it is in RG?")
   }
 
   def root1(fu: FrontendUniverse) = {
-    div(position:= "absolute", top:="100px", bottom:="100px", width:="50%", marginLeft:="-25%", left:="50%",
-      div(fontSize:="2.5vw", position:="absolute", bottom:="0px", top:="0px", left:="0px", right:="0px", display:="flex", flexDirection:="row",
-        div(width:= "100%", border:="1px solid black", backgroundColor:= "#4c674a",
-          display:="flex", flexDirection:="column", justifyContent:="center", textAlign:= "center",
-          Directives.selectedGame(fu.selectedGame)),
-        div(width:= "100%", border:="1px solid black", backgroundColor:= "#65b95f",
-          br,div("Players:"),
+    div(
+      position := "absolute",
+      top := "100px",
+      bottom := "100px",
+      width := "50%",
+      marginLeft := "-25%",
+      left := "50%",
+      div(
+        fontSize := "2.5vw",
+        position := "absolute",
+        bottom := "0px",
+        top := "0px",
+        left := "0px",
+        right := "0px",
+        display := "flex",
+        flexDirection := "row",
+        div(
+          width := "100%",
+          border := "1px solid black",
+          backgroundColor := "#4c674a",
+          display := "flex",
+          flexDirection := "column",
+          justifyContent := "center",
+          textAlign := "center",
+          Directives.selectedGame(fu.selectedGame)
+        ),
+        div(
+          width := "100%",
+          border := "1px solid black",
+          backgroundColor := "#65b95f",
           br,
-          div(position:="relative", left:="30px",
-            people(fu.players)
-          )
-       )
+          div("Players:"),
+          br,
+          div(position := "relative", left := "30px", people(fu.players))
+        )
       )
     )
   }

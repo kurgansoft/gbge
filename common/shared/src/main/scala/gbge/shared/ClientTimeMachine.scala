@@ -5,10 +5,10 @@ import gbge.shared.tm.Perspective
 
 // TODO: make this work
 case class ClientTimeMachine(
-                              changePoints: List[Int] = List.empty,
-                              actions: List[(Action, Boolean)] = List.empty,
-                              stateCache: Map[(Int, Perspective), FrontendUniverse] = Map.empty
-                            ) {
+    changePoints: List[Int] = List.empty,
+    actions: List[(Action, Boolean)] = List.empty,
+    stateCache: Map[(Int, Perspective), FrontendUniverse] = Map.empty
+) {
 
   def take(number: Int): ClientTimeMachine = {
     assert(number >= 0)
@@ -16,13 +16,15 @@ case class ClientTimeMachine(
     this.copy(
       changePoints.filterNot(_ > number),
       actions = this.actions.take(number),
-      stateCache = this.stateCache.filter(_._1._1 < number+1)
+      stateCache = this.stateCache.filter(_._1._1 < number + 1)
     )
   }
 
   def serialize(): String = {
-    val actionStrings: List[(String, Boolean)] = List.empty //actions.map(t => (t._1.serialize(), t._2))
-    val serializedStateCache: Map[(Int, Perspective), String] = stateCache.view.mapValues(_.toString).toMap
+    val actionStrings: List[(String, Boolean)] =
+      List.empty // actions.map(t => (t._1.serialize(), t._2))
+    val serializedStateCache: Map[(Int, Perspective), String] =
+      stateCache.view.mapValues(_.toString).toMap
     "upickle.default.write((changePoints, actionStrings, serializedStateCache))"
   }
 }

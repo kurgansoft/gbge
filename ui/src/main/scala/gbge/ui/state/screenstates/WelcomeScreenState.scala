@@ -16,17 +16,26 @@ case object SelectGameEvent extends WelcomeScreenEvent
 
 case class WelcomeScreenState(index: Int = 0) extends OfflineState {
 
-  implicit def convert(welcomeScreenState: WelcomeScreenState): (WelcomeScreenState, UIO[List[Event]]) =
+  implicit def convert(
+      welcomeScreenState: WelcomeScreenState
+  ): (WelcomeScreenState, UIO[List[Event]]) =
     (welcomeScreenState, ZIO.succeed(List.empty))
 
-  override def handleScreenEvent(sa: ScreenEvent, fu: Option[FrontendUniverse], playerId: Option[Int]): (WelcomeScreenState, UIO[List[Event]]) = sa match {
+  override def handleScreenEvent(
+      sa: ScreenEvent,
+      fu: Option[FrontendUniverse],
+      playerId: Option[Int]
+  ): (WelcomeScreenState, UIO[List[Event]]) = sa match {
     case wsa: WelcomeScreenEvent => reduce0(wsa, None)
-    case _ => this
+    case _                       => this
   }
 
-  def reduce0(action: WelcomeScreenEvent, token: Option[String]): (WelcomeScreenState, UIO[List[Event]]) = action match {
+  def reduce0(
+      action: WelcomeScreenEvent,
+      token: Option[String]
+  ): (WelcomeScreenState, UIO[List[Event]]) = action match {
     case ChangeGameDropDownIndexEvent(index) => this.copy(index = index)
-    case SelectGameEvent =>
+    case SelectGameEvent                     =>
       (this, ZIO.succeed(List(DispatchActionWithToken(SelectGame(index)))))
     case _ => this
   }

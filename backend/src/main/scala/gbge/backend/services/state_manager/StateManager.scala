@@ -8,12 +8,19 @@ import zio.stream.ZStream
 import zio.{IO, ZIO}
 
 trait StateManager {
-  def update(action: Action, playerId: Option[Int] = None): IO[Failure, (Universe, ZIO[TokenGenerator, Nothing, Option[Action]])]
-  
+  def update(
+      action: Action,
+      playerId: Option[Int] = None
+  ): IO[Failure, (Universe, ZIO[TokenGenerator, Nothing, Option[Action]])]
+
   val universeStream: ZStream[Any, Nothing, Universe]
 }
 
 object StateManager {
-  def update(action: Action, playerId: Option[Int] = None): ZIO[StateManager, Failure, (Universe, ZIO[TokenGenerator, Nothing, Option[Action]])] =
+  def update(action: Action, playerId: Option[Int] = None): ZIO[
+    StateManager,
+    Failure,
+    (Universe, ZIO[TokenGenerator, Nothing, Option[Action]])
+  ] =
     ZIO.serviceWithZIO(_.update(action, playerId))
 }

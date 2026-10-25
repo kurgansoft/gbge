@@ -14,4 +14,3 @@ object TMMessage {
 case class PortalId(id: Int) extends TMMessage
 
 case object Update extends TMMessage
-

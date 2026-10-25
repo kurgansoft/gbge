@@ -17,13 +17,20 @@ object GameConfig {
     val hostConfig = Config.string("host").optional
     for {
       resolvedHost <- ZIO.config(hostConfig).orElseFail(())
-      resolvedPort <- ZIO.config(portConfig).tapError(_ => ZIO.logError(s"Provided port value is invalid.")).orElseFail(())
+      resolvedPort <- ZIO
+        .config(portConfig)
+        .tapError(_ => ZIO.logError(s"Provided port value is invalid."))
+        .orElseFail(())
       gameConfig <- (resolvedHost, resolvedPort) match {
-        case (_, Some(port)) if port <= 0 || port > 65535 => ZIO.logError(s"Provided port value [$port] is invalid.") *> ZIO.fail(())
-        case (None, None) => ZIO.succeed(GameConfig())
-        case (None, Some(port)) => ZIO.succeed(GameConfig(port = port))
-        case (Some(host), None) => ZIO.succeed(GameConfig(Some(host)))
-        case (Some(host), Some(port)) => ZIO.succeed(GameConfig(Some(host), port))
+        case (_, Some(port)) if port <= 0 || port > 65535 =>
+          ZIO.logError(s"Provided port value [$port] is invalid.") *> ZIO.fail(
+            ()
+          )
+        case (None, None)             => ZIO.succeed(GameConfig())
+        case (None, Some(port))       => ZIO.succeed(GameConfig(port = port))
+        case (Some(host), None)       => ZIO.succeed(GameConfig(Some(host)))
+        case (Some(host), Some(port)) =>
+          ZIO.succeed(GameConfig(Some(host), port))
       }
     } yield gameConfig
   }

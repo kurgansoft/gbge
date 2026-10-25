@@ -20,7 +20,8 @@ object TimeMachineEndpoints {
   import sttp.tapir.generic.auto.*
 
   val actionHistory: PublicEndpoint[Unit, Nothing, ActionStackInTransit, Any] =
-    endpoint.in("tm" / "actions")
+    endpoint
+      .in("tm" / "actions")
       .out(jsonBody[ActionStackInTransit])
       .errorOut(Void())
 
@@ -40,11 +41,10 @@ object TimeMachineEndpoints {
       .out(jsonBody[String])
       .errorOut(emptyOutput.and(statusCode(StatusCode.BadRequest)))
 
-  val getTmStateAtTimeForPlayer: PublicEndpoint[(Int, Int), Unit, String,  Any] =
+  val getTmStateAtTimeForPlayer: PublicEndpoint[(Int, Int), Unit, String, Any] =
     endpoint.get
       .in("tm" / "getPlayerState" / path[Int]("index") / path[Int]("playerId"))
       .out(jsonBody[String])
       .errorOut(emptyOutput.and(statusCode(StatusCode.BadRequest)))
-
 
 }

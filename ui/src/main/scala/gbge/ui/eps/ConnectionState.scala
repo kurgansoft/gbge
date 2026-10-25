@@ -3,11 +3,13 @@ package gbge.ui.eps
 import gbge.ui.eps.ConnectionStatus._
 
 case class ConnectionState(
-                            status: ConnectionStatus = NOT_YET_ESTABLISHED,
-                            connectionTimestamps: List[Long] = List.empty,
-                            disconnectionTimestamps: List[Long] = List.empty
-                          ) {
-  def transitionToConnectedStateWithTimeStamp(timestamp: Long): ConnectionState = {
+    status: ConnectionStatus = NOT_YET_ESTABLISHED,
+    connectionTimestamps: List[Long] = List.empty,
+    disconnectionTimestamps: List[Long] = List.empty
+) {
+  def transitionToConnectedStateWithTimeStamp(
+      timestamp: Long
+  ): ConnectionState = {
     assert(status != CONNECTED)
     this.copy(
       status = CONNECTED,

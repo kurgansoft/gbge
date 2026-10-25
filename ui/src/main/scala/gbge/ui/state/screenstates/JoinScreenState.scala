@@ -16,19 +16,30 @@ case class NameInput(name: String) extends JoinScreenEvent
 case object DismissErrorMessage extends JoinScreenEvent
 case class ErrorInput(message: String) extends JoinScreenEvent
 
-case class JoinScreenState(nameInput: String = "", submitEnabled: Boolean = false, errorMessage: Option[String] = None) extends OfflineState[TokenService] {
+case class JoinScreenState(
+    nameInput: String = "",
+    submitEnabled: Boolean = false,
+    errorMessage: Option[String] = None
+) extends OfflineState[TokenService] {
 
-  override def handleScreenEvent(sa: ScreenEvent, fu: Option[FrontendUniverse], playerId: Option[Int]): 
-    (OfflineState[TokenService], ZIO[TokenService, Nothing, List[Event]]) = sa match {
+  override def handleScreenEvent(
+      sa: ScreenEvent,
+      fu: Option[FrontendUniverse],
+      playerId: Option[Int]
+  ): (OfflineState[TokenService], ZIO[TokenService, Nothing, List[Event]]) =
+    sa match {
       case wsa: JoinScreenEvent => reduce0(wsa)
-      case _ => this
+      case _                    => this
     }
-  
-  implicit def convert(offlineState: OfflineState[TokenService]): (OfflineState[TokenService], ZIO[TokenService, Nothing, List[Event]]) =
+
+  implicit def convert(
+      offlineState: OfflineState[TokenService]
+  ): (OfflineState[TokenService], ZIO[TokenService, Nothing, List[Event]]) =
     (offlineState, ZIO.succeed(List.empty))
 
-
-  def reduce0(action: JoinScreenEvent): (OfflineState[TokenService], ZIO[TokenService, Nothing, List[Event]]) = {
+  def reduce0(
+      action: JoinScreenEvent
+  ): (OfflineState[TokenService], ZIO[TokenService, Nothing, List[Event]]) = {
     action match {
       case NameInput(name) =>
         this.copy(nameInput = name, submitEnabled = name.nonEmpty)

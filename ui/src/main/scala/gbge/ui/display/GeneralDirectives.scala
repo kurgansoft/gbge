@@ -11,42 +11,98 @@ import uiglue.{Event, EventLoop}
 
 object GeneralDirectives {
 
-  def generalRoleDisplayer(players: List[FrontendPlayer], frontendGame: FrontendGame[_]): TagOf[Div] = {
+  def generalRoleDisplayer(
+      players: List[FrontendPlayer],
+      frontendGame: FrontendGame[_]
+  ): TagOf[Div] = {
     val allTheRoles = frontendGame.roles
-    div(display:="flex", flexDirection:="row", justifyContent:="space-evenly", width:="100%", textAlign:="left", color:= "black",
-      div(u("Taken roles:"), backgroundColor:="#656565", width:="100%",
+    div(
+      display := "flex",
+      flexDirection := "row",
+      justifyContent := "space-evenly",
+      width := "100%",
+      textAlign := "left",
+      color := "black",
+      div(
+        u("Taken roles:"),
+        backgroundColor := "#656565",
+        width := "100%",
         (for (p <- players.filter(_.role.isDefined))
-          yield div(p.name + " - " + allTheRoles.find(role => p.role.contains(role.roleId)).get)).toTagMod
+          yield div(
+            p.name + " - " + allTheRoles
+              .find(role => p.role.contains(role.roleId))
+              .get
+          )).toTagMod
       ),
-      div(u("Players with no roles:"), backgroundColor:="#65b95f", width:="100%",
+      div(
+        u("Players with no roles:"),
+        backgroundColor := "#65b95f",
+        width := "100%",
         (for (p <- players.filter(_.role.isEmpty))
           yield div(p.name)).toTagMod
       )
     )
   }
 
-  def generalRoleChooserScreen(you: FrontendPlayer, players: List[FrontendPlayer], frontendGame: FrontendGame[_], eventHandler: EventLoop.EventHandler[Event]): TagOf[Div] = {
+  def generalRoleChooserScreen(
+      you: FrontendPlayer,
+      players: List[FrontendPlayer],
+      frontendGame: FrontendGame[_],
+      eventHandler: EventLoop.EventHandler[Event]
+  ): TagOf[Div] = {
     val allTheRoles = frontendGame.roles
-    val availableRoles = allTheRoles.filterNot(role2 => players.exists(_.role.contains(role2.roleId)))
-    div(display:="flex", flexDirection:="column", alignItems:="center", textAlign:="center",
+    val availableRoles = allTheRoles.filterNot(role2 =>
+      players.exists(_.role.contains(role2.roleId))
+    )
+    div(
+      display := "flex",
+      flexDirection := "column",
+      alignItems := "center",
+      textAlign := "center",
       if (you.role.isDefined) {
         div(
-          br, div("Your role: " + allTheRoles.find(role => you.role.contains(role.roleId)).get), br, br,
-          button(`class`:="btn btn-primary", "LEAVE YOUR ROLE", onClick --> Callback {
-            eventHandler(DispatchActionWithToken(UnlinkPlayerFromRole(you.id)))
-          }),br,br
+          br,
+          div(
+            "Your role: " + allTheRoles
+              .find(role => you.role.contains(role.roleId))
+              .get
+          ),
+          br,
+          br,
+          button(
+            `class` := "btn btn-primary",
+            "LEAVE YOUR ROLE",
+            onClick --> Callback {
+              eventHandler(
+                DispatchActionWithToken(UnlinkPlayerFromRole(you.id))
+              )
+            }
+          ),
+          br,
+          br
         )
       } else {
         div(
           div("Choose a role:"),
-          availableRoles.map(gameRole =>
-            div(
-              button(`class`:="btn btn-primary", gameRole.toString, onClick --> Callback {
-                eventHandler(DispatchActionWithToken(LinkRoleToPlayer(you.id, gameRole.roleId)))
-              }),
-              br,br
+          availableRoles
+            .map(gameRole =>
+              div(
+                button(
+                  `class` := "btn btn-primary",
+                  gameRole.toString,
+                  onClick --> Callback {
+                    eventHandler(
+                      DispatchActionWithToken(
+                        LinkRoleToPlayer(you.id, gameRole.roleId)
+                      )
+                    )
+                  }
+                ),
+                br,
+                br
+              )
             )
-          ).toTagMod
+            .toTagMod
         )
       },
       generalRoleDisplayer(players, frontendGame)
@@ -54,8 +110,10 @@ object GeneralDirectives {
   }
 
   def buttonStack(buttons: TagOf[Button]*): TagOf[Div] = {
-    div(display:="flex", flexDirection:="column",
-      buttons.map(_.apply(marginBottom:="30px")).toTagMod
+    div(
+      display := "flex",
+      flexDirection := "column",
+      buttons.map(_.apply(marginBottom := "30px")).toTagMod
     )
   }
 }

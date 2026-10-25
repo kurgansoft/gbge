@@ -5,7 +5,9 @@ import zio.json.JsonCodec
 import zio.schema.{DeriveSchema, Schema}
 
 case class ActionStackInTransit(entries: List[EncodedActionInvokerAndPlayers]) {
-  def toActionEntries()(implicit actionCodecs: List[JsonCodec[_ <: GameAction]]): List[ActionInvokerAndPlayers] = entries.map(_.convertToActionAndInvoker())
+  def toActionEntries()(implicit
+      actionCodecs: List[JsonCodec[_ <: GameAction]]
+  ): List[ActionInvokerAndPlayers] = entries.map(_.convertToActionAndInvoker())
 }
 
 object ActionStackInTransit {
@@ -13,5 +15,3 @@ object ActionStackInTransit {
   implicit val jsonCodec: JsonCodec[ActionStackInTransit] =
     zio.schema.codec.JsonCodec.jsonCodec(schema)
 }
-
-

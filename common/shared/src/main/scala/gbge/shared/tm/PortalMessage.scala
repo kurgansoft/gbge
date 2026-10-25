@@ -12,20 +12,24 @@ object PortalMessage {
     zio.schema.codec.JsonCodec.jsonCodec(schema)
 }
 
-case class PortalMessageWithPayload(rawFU: String , perspective: Perspective) extends PortalMessage
+case class PortalMessageWithPayload(rawFU: String, perspective: Perspective)
+    extends PortalMessage
 
 object PortalMessageWithPayload {
 
-  def create(fu: FrontendUniverse, perspective: Perspective): PortalMessageWithPayload = {
+  def create(
+      fu: FrontendUniverse,
+      perspective: Perspective
+  ): PortalMessageWithPayload = {
     PortalMessageWithPayload(fu.toString(), perspective)
   }
 }
 
 case object ActionNeedsToBeSelected extends PortalMessage
 
-case class PerspectiveNeedsToBeSelected(selectedAction: Int) extends PortalMessage
+case class PerspectiveNeedsToBeSelected(selectedAction: Int)
+    extends PortalMessage
 
 object PerspectiveNeedsToBeSelected
-
 
 case object MysteriousError0 extends PortalMessage

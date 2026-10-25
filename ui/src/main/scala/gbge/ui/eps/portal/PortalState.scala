@@ -1,6 +1,16 @@
 package gbge.ui.eps.portal
 
-import gbge.client.events_and_effects.{ActionNeedsToBeSelectedEvent, EventFromSubState, NewFU, PerspectiveNeedsToBeSelectedEvent, PortalClientEvent, PortalEffects, PortalId, Start, UniversePerspectivePairReceived}
+import gbge.client.events_and_effects.{
+  ActionNeedsToBeSelectedEvent,
+  EventFromSubState,
+  NewFU,
+  PerspectiveNeedsToBeSelectedEvent,
+  PortalClientEvent,
+  PortalEffects,
+  PortalId,
+  Start,
+  UniversePerspectivePairReceived
+}
 import gbge.shared.tm.{PlayerPerspective, SpectatorPerspective}
 import gbge.ui.eps.ConnectionStatus.CONNECTED
 import gbge.ui.eps.player.ClientState
@@ -18,41 +28,66 @@ case object WaitingForInfo extends GeneralPortalClientState
 case object MysteriousError extends GeneralPortalClientState
 
 case class PortalState(
-                        portalId: Option[Int] = None,
-                        clientState: Option[UIState[Event, Any]] = None,
-                        generalPortalClientState: GeneralPortalClientState = WaitingForInfo
-                      ) extends UIState[PortalClientEvent, Any] {
+    portalId: Option[Int] = None,
+    clientState: Option[UIState[Event, Any]] = None,
+    generalPortalClientState: GeneralPortalClientState = WaitingForInfo
+) extends UIState[PortalClientEvent, Any] {
 
-  implicit def implicitConversion(state: PortalState): (PortalState, EventLoop.EventHandler[PortalClientEvent] => UIO[List[PortalClientEvent]]) =
+  implicit def implicitConversion(state: PortalState): (
+      PortalState,
+      EventLoop.EventHandler[PortalClientEvent] => UIO[List[PortalClientEvent]]
+  ) =
     (state, _ => ZIO.succeed(List.empty))
 
-  override def processEvent(event: PortalClientEvent): (PortalState, EventLoop.EventHandler[PortalClientEvent] => UIO[List[PortalClientEvent]]) =
+  override def processEvent(event: PortalClientEvent): (
+      PortalState,
+      EventLoop.EventHandler[PortalClientEvent] => UIO[List[PortalClientEvent]]
+  ) =
     event match {
       case Start =>
         (this, PortalEffects.retrievePortalIdFromHash)
       case PortalId(id) =>
-        (this.copy(portalId = Some(id)), PortalEffects.setUpPortalWSConnection(id))
+        (
+          this.copy(portalId = Some(id)),
+          PortalEffects.setUpPortalWSConnection(id)
+        )
       case UniversePerspectivePairReceived(perspective, frontendUniverse) =>
         perspective match {
           case SpectatorPerspective =>
-            val tempState = SpectatorState(frontendUniverse = Some(frontendUniverse), sseStreamStatus = CONNECTED).processEvent(NewFU(frontendUniverse))._1
+            val tempState = SpectatorState(
+              frontendUniverse = Some(frontendUniverse),
+              sseStreamStatus = CONNECTED
+            ).processEvent(NewFU(frontendUniverse))._1
 //            this.copy(clientState = Some(tempState), generalPortalClientState = EverythingIsSelected)
-            this.copy(clientState = None, generalPortalClientState = EverythingIsSelected)
+            this.copy(
+              clientState = None,
+              generalPortalClientState = EverythingIsSelected
+            )
           case PlayerPerspective(playerId) =>
             val player = frontendUniverse.players.find(_.id == playerId)
             if (player.isDefined) {
-              val state: ClientState = ClientState() //.processEvent(NewPlayerEvent(player.get))._1.processEvent(NewFU(frontendUniverse))._1
+              val state: ClientState =
+                ClientState() // .processEvent(NewPlayerEvent(player.get))._1.processEvent(NewFU(frontendUniverse))._1
 //              this.copy(clientState = Some(state), generalPortalClientState = EverythingIsSelected)
               ???
             } else {
-              this.copy(clientState = None, generalPortalClientState = MysteriousError)
+              this.copy(
+                clientState = None,
+                generalPortalClientState = MysteriousError
+              )
             }
         }
       case EventFromSubState(event) =>
         this.copy(clientState = clientState.map(_.processEvent(event)._1))
       case ActionNeedsToBeSelectedEvent =>
-        this.copy(clientState = None, generalPortalClientState = ActionIsNotSelected)
+        this.copy(
+          clientState = None,
+          generalPortalClientState = ActionIsNotSelected
+        )
       case PerspectiveNeedsToBeSelectedEvent(_) =>
-        this.copy(clientState = None, generalPortalClientState = PerspectiveIsNotSelected)
+        this.copy(
+          clientState = None,
+          generalPortalClientState = PerspectiveIsNotSelected
+        )
     }
 }

@@ -11,9 +11,15 @@ trait GameProps[GA <: GameAction, FG <: FrontendGame[GA]] {
 
   implicit val actionCodec: JsonCodec[GA]
   implicit val gameCodec: JsonCodec[FG]
-  
-  def createSttpRequestFromGameAction(gameAction: GameAction): Option[Request[Either[String, String]]] = {
+
+  def createSttpRequestFromGameAction(
+      gameAction: GameAction
+  ): Option[Request[Either[String, String]]] = {
     val castedGameAction: GA = gameAction.asInstanceOf[GA]
-    Some(basicRequest.post(uri"performAction/$urlFragment/").body(asJson[GA](castedGameAction)))
+    Some(
+      basicRequest
+        .post(uri"performAction/$urlFragment/")
+        .body(asJson[GA](castedGameAction))
+    )
   }
 }

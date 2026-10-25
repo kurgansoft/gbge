@@ -11,7 +11,10 @@ import scala.scalajs.js.typedarray.Uint8Array
 // is not working with the FetchBackend. Maybe it is something that needs to be fixed in sttp itself?
 object SseUtils {
 
-  def createFetchPromise(url: String, token: Option[String] = None): Promise[Response] = {
+  def createFetchPromise(
+      url: String,
+      token: Option[String] = None
+  ): Promise[Response] = {
     val headers = new Headers()
     if (token.nonEmpty)
       headers.append("Authorization", s"Bearer ${token.get}")
@@ -23,30 +26,37 @@ object SseUtils {
   }
 
   def processStream(
-                     streamBody: ReadableStream[Uint8Array],
-                     onEventCallback: String => Unit,
-     )(implicit ec: ExecutionContext): Future[Unit] = {
-    val reader: ReadableStreamReader[_] = streamBody.getReader().asInstanceOf[ReadableStreamReader[_]]
+      streamBody: ReadableStream[Uint8Array],
+      onEventCallback: String => Unit
+  )(implicit ec: ExecutionContext): Future[Unit] = {
+    val reader: ReadableStreamReader[_] =
+      streamBody.getReader().asInstanceOf[ReadableStreamReader[_]]
     val decoder = Dynamic.newInstance(Dynamic.global.TextDecoder)()
 
     def readLoop(): Future[Unit] = for {
       result <- reader.read().toFuture
-      _ <- if (result.done) {
-        Future.failed(new RuntimeException("The SSE stream was closed."))
-      } else {
-        val decodedValue = decoder.applyDynamic("decode")(result.value.asInstanceOf[Chunk[Byte]], Dynamic.literal(stream = true))
+      _ <-
+        if (result.done) {
+          Future.failed(new RuntimeException("The SSE stream was closed."))
+        } else {
+          val decodedValue = decoder.applyDynamic("decode")(
+            result.value.asInstanceOf[Chunk[Byte]],
+            Dynamic.literal(stream = true)
+          )
 
-        val allEvents = decodedValue.toString.split("\n\n")
-        // Sometimes multiple events are received almost simultaneously.
-        // In those cases it is enough to process the latest one, since the older ones would be overwritten anyway.
-        if (allEvents.size > 1) {
-          println(s"Multiple [${allEvents.size}] SSE events received; only processing the last one.")
+          val allEvents = decodedValue.toString.split("\n\n")
+          // Sometimes multiple events are received almost simultaneously.
+          // In those cases it is enough to process the latest one, since the older ones would be overwritten anyway.
+          if (allEvents.size > 1) {
+            println(
+              s"Multiple [${allEvents.size}] SSE events received; only processing the last one."
+            )
+          }
+          val lastEvent = allEvents.last
+          onEventCallback(lastEvent)
+
+          readLoop()
         }
-        val lastEvent = allEvents.last
-        onEventCallback(lastEvent)
-
-        readLoop()
-      }
     } yield ()
 
     readLoop()

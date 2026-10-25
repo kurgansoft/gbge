@@ -8,8 +8,11 @@ import japgolly.scalajs.react.ScalaComponent
 import uiglue.{Event, EventLoop}
 
 object Displayer {
-  val portalComponent = ScalaComponent.builder[(PortalState, EventLoop.EventHandler[PortalClientEvent])]("PortalComponent").
-    render_P(t => {
+  val portalComponent = ScalaComponent
+    .builder[(PortalState, EventLoop.EventHandler[PortalClientEvent])](
+      "PortalComponent"
+    )
+    .render_P(t => {
       val portalState = t._1
       val eventHandler = t._2
 
@@ -22,38 +25,109 @@ object Displayer {
       }
 
       portalState.generalPortalClientState match {
-        case ActionIsNotSelected | PerspectiveIsNotSelected | WaitingForInfo | MysteriousError =>
-          div(color:="yellow",
-            h1(s"Portal client for portal with id #${portalState.portalId.getOrElse(-1)}"),
-            div("State of the portal is: " + portalState.generalPortalClientState)
-          )
-        case EverythingIsSelected => {
-          portalState.clientState match {
-            case Some(SpectatorState(frontendUniverse, connectionStatus, offlineState)) =>
-              Screens0.root(SpectatorState(frontendUniverse, connectionStatus, offlineState), spectatorBridge)
-            case Some(ClientState(frontendUniverse, connectionStatus, you, offlineState, tab)) =>
-              gbge.ui.display.Displayer.rootComponent(
-                (ClientState(frontendUniverse, connectionStatus, you, offlineState, tab), playerBridge)
-              ).vdomElement
-          case _ =>
-            div(color:="yellow",
-              h1("Something went wrong."),
+        case ActionIsNotSelected | PerspectiveIsNotSelected | WaitingForInfo |
+            MysteriousError =>
+          div(
+            color := "yellow",
+            h1(
+              s"Portal client for portal with id #${portalState.portalId.getOrElse(-1)}"
+            ),
+            div(
+              "State of the portal is: " + portalState.generalPortalClientState
             )
-        }
-      }
-      portalState.clientState match {
-        case Some(SpectatorState(frontendUniverse, wsConnectionStatus, offlineState)) =>
-          Screens0.root(SpectatorState(frontendUniverse, wsConnectionStatus, offlineState), spectatorBridge)
-        case Some(ClientState(frontendUniverse, connectionStatus, you, offlineState, tab)) =>
-          gbge.ui.display.Displayer.rootComponent(
-            (ClientState(frontendUniverse, connectionStatus, you, offlineState, tab), playerBridge)
-          ).vdomElement
-        case _ =>
-          div(color:="yellow",
-            h1("Portal component"),
-            div("portal id is: " + portalState.portalId),
           )
+        case EverythingIsSelected =>
+          {
+            portalState.clientState match {
+              case Some(
+                    SpectatorState(
+                      frontendUniverse,
+                      connectionStatus,
+                      offlineState
+                    )
+                  ) =>
+                Screens0.root(
+                  SpectatorState(
+                    frontendUniverse,
+                    connectionStatus,
+                    offlineState
+                  ),
+                  spectatorBridge
+                )
+              case Some(
+                    ClientState(
+                      frontendUniverse,
+                      connectionStatus,
+                      you,
+                      offlineState,
+                      tab
+                    )
+                  ) =>
+                gbge.ui.display.Displayer
+                  .rootComponent(
+                    (
+                      ClientState(
+                        frontendUniverse,
+                        connectionStatus,
+                        you,
+                        offlineState,
+                        tab
+                      ),
+                      playerBridge
+                    )
+                  )
+                  .vdomElement
+              case _ =>
+                div(color := "yellow", h1("Something went wrong."))
+            }
+          }
+          portalState.clientState match {
+            case Some(
+                  SpectatorState(
+                    frontendUniverse,
+                    wsConnectionStatus,
+                    offlineState
+                  )
+                ) =>
+              Screens0.root(
+                SpectatorState(
+                  frontendUniverse,
+                  wsConnectionStatus,
+                  offlineState
+                ),
+                spectatorBridge
+              )
+            case Some(
+                  ClientState(
+                    frontendUniverse,
+                    connectionStatus,
+                    you,
+                    offlineState,
+                    tab
+                  )
+                ) =>
+              gbge.ui.display.Displayer
+                .rootComponent(
+                  (
+                    ClientState(
+                      frontendUniverse,
+                      connectionStatus,
+                      you,
+                      offlineState,
+                      tab
+                    ),
+                    playerBridge
+                  )
+                )
+                .vdomElement
+            case _ =>
+              div(
+                color := "yellow",
+                h1("Portal component"),
+                div("portal id is: " + portalState.portalId)
+              )
+          }
       }
-      }
-    }).build
+    })
+    .build
 }

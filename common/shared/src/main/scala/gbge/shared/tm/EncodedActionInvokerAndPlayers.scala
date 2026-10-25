@@ -5,11 +5,19 @@ import gbge.shared.actions.{Action, GameAction, GeneralAction}
 import zio.json.JsonCodec
 import zio.schema.{DeriveSchema, Schema}
 
-case class EncodedActionInvokerAndPlayers(actionEncodedAsJson: String, invoker: Option[Int], players: List[FrontendPlayer]) {
-  def convertToActionAndInvoker()(implicit actionCodecs: List[JsonCodec[_ <: GameAction]]): ActionInvokerAndPlayers = {
-    val interpretedAsGeneralAction = GeneralAction.codec.decoder.decodeJson(actionEncodedAsJson)
+case class EncodedActionInvokerAndPlayers(
+    actionEncodedAsJson: String,
+    invoker: Option[Int],
+    players: List[FrontendPlayer]
+) {
+  def convertToActionAndInvoker()(implicit
+      actionCodecs: List[JsonCodec[_ <: GameAction]]
+  ): ActionInvokerAndPlayers = {
+    val interpretedAsGeneralAction =
+      GeneralAction.codec.decoder.decodeJson(actionEncodedAsJson)
     interpretedAsGeneralAction match {
-      case Right(generalAction) => ActionInvokerAndPlayers(generalAction, invoker, players)
+      case Right(generalAction) =>
+        ActionInvokerAndPlayers(generalAction, invoker, players)
       case _ =>
         var index: Int = 0
         var action: Action = null
@@ -25,7 +33,9 @@ case class EncodedActionInvokerAndPlayers(actionEncodedAsJson: String, invoker: 
         }
 
         if (action == null) {
-          throw new RuntimeException(s"could not decode json value [$actionEncodedAsJson]")
+          throw new RuntimeException(
+            s"could not decode json value [$actionEncodedAsJson]"
+          )
         }
         ActionInvokerAndPlayers(action, invoker, players)
     }

@@ -34,7 +34,9 @@ case object CancelGame extends GeneralAction with AdminAction
 
 case object Start extends GeneralAction with AdminAction
 
-case class DelegateAdminRole(idOfTheNewAdmin: Int) extends GeneralAction with AdminAction
+case class DelegateAdminRole(idOfTheNewAdmin: Int)
+    extends GeneralAction
+    with AdminAction
 
 case class KickPlayer(playerId: Int) extends GeneralAction
 
@@ -48,6 +50,10 @@ case class UnassignRole(roleId: Int) extends GeneralAction
 
 case class InvalidAction(payload: String) extends GeneralAction
 
-case object IncreaseProposedNumberOfPlayers extends GeneralAction with AdminAction
+case object IncreaseProposedNumberOfPlayers
+    extends GeneralAction
+    with AdminAction
 
-case object DecreaseProposedNumberOfPlayers extends GeneralAction with AdminAction 
+case object DecreaseProposedNumberOfPlayers
+    extends GeneralAction
+    with AdminAction

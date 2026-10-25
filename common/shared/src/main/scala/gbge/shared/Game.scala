@@ -6,6 +6,6 @@ trait Game {
 
   val roles: List[GameRole]
 
-  def getRoleById(id: Int) : Option[GameRole] = roles.find(_.roleId == id)
+  def getRoleById(id: Int): Option[GameRole] = roles.find(_.roleId == id)
 
 }

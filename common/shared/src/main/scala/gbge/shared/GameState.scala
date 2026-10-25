@@ -13,5 +13,3 @@ object GameState {
   case object NOT_STARTED extends GameState
   case object IN_PROGRESS extends GameState
 }
-
-

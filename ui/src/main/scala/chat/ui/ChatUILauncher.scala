@@ -13,6 +13,8 @@ import scala.scalajs.js.annotation.JSExportTopLevel
 // you try to register multiple games.
 //@JSExportTopLevel("ep")
 object ChatUILauncher extends EntryPoint {
-  gbge.shared.RG.gameCodecs = List(ClientChatGame.codec.asInstanceOf[JsonCodec[FrontendGame[_ <: GameAction]]])
+  gbge.shared.RG.gameCodecs = List(
+    ClientChatGame.codec.asInstanceOf[JsonCodec[FrontendGame[_ <: GameAction]]]
+  )
   gbge.ui.RG.registeredGames = List(ClientChatGameProps)
 }

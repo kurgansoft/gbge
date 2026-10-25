@@ -11,9 +11,13 @@ object URLBasedTokenService extends TokenService {
   override val getToken: IO[Nothing, Option[String]] = for {
     _ <- ZIO.log("Attempting to get token from hash")
     tokenFormURL: String = org.scalajs.dom.window.location.hash
-    recoveredToken = if (tokenFormURL != null && tokenFormURL.length > 1 && tokenFormURL.startsWith("#"))
-      Option(tokenFormURL.substring(1))
-    else None
+    recoveredToken =
+      if (
+        tokenFormURL != null && tokenFormURL.length > 1 && tokenFormURL
+          .startsWith("#")
+      )
+        Option(tokenFormURL.substring(1))
+      else None
   } yield recoveredToken
 
   override val clearToken: IO[Nothing, Unit] = for {
