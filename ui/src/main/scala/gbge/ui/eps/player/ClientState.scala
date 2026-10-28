@@ -6,7 +6,7 @@ import gbge.shared.actions.{GameAction, GeneralAction, KickPlayer}
 import gbge.shared.{FrontendPlayer, FrontendUniverse, GameRole}
 import gbge.ui.ClientGameProps
 import gbge.ui.eps.ConnectionStatus.*
-import gbge.ui.eps.{ConnectionState, ConnectionStatus}
+import gbge.ui.eps.ConnectionState
 import gbge.ui.state.OfflineState
 import gbge.ui.state.screenstates.{JoinScreenState, WelcomeScreenState}
 import gbge.ui.token.TokenService
@@ -42,12 +42,12 @@ case class ClientState(
     matchedRole <- allRoles.find(_.roleId == yourRoleId)
   } yield matchedRole
 
-  def getPropsOfTheCurrentGame: Option[ClientGameProps[_, _]] = {
+  def getPropsOfTheCurrentGame: Option[ClientGameProps[?, ?]] = {
     val selectedGameNumber = frontendUniverse.flatMap(_.selectedGame)
     selectedGameNumber.map(gbge.ui.RG.registeredGames(_))
   }
 
-  def getCurrentGame: Option[ClientGameProps[_, _]] = {
+  def getCurrentGame: Option[ClientGameProps[?, ?]] = {
     val selectedGameNumber = frontendUniverse.flatMap(_.selectedGame)
     selectedGameNumber.map(gbge.ui.RG.registeredGames(_))
   }
@@ -232,7 +232,6 @@ case class ClientState(
       ClientState,
       EventLoop.EventHandler[Event] => ZIO[TokenService, Nothing, List[Event]]
   ) = {
-    println("...new FU arrived...")
     val updatedYou = fu.players.find(_.id == this.you.get._1)
     val adminStatusLost: Boolean =
       false // you.exists(_.isAdmin) && updatedYou.exists(!_.isAdmin)

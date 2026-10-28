@@ -1,19 +1,17 @@
 package gbge.backend.endpoints_and_aspects
 
-import gbge.shared.tm.ActionStackInTransit
 import zio.ZNothing
-import zio.http.{MediaType, RoutePattern, Status}
 import zio.http.codec.{HttpCodec, PathCodec, StatusCodec}
 import zio.http.endpoint.AuthType.None
 import zio.http.endpoint.Endpoint
+import zio.http.{MediaType, RoutePattern, Status}
 
 object TimeMachineEndpoints {
-  val actionHistory
-      : Endpoint[Unit, Unit, ZNothing, ActionStackInTransit, None] =
+  val actionHistory: Endpoint[Unit, Unit, ZNothing, String, None] =
     Endpoint(RoutePattern.GET / "tm" / "actions")
       .outCodec(
-        StatusCodec.Ok ++ HttpCodec.content[ActionStackInTransit](
-          MediaType.application.json
+        StatusCodec.Ok ++ HttpCodec.content[String](
+          MediaType.text.plain
         )
       )
 
@@ -31,7 +29,7 @@ object TimeMachineEndpoints {
     Endpoint(
       RoutePattern.GET / "tm" / "getSpectatorState" / PathCodec.int("index")
     )
-      .outCodec(HttpCodec.content[String](MediaType.application.json))
+      .outCodec(HttpCodec.content[String](MediaType.text.plain))
       .outError[Unit](Status.BadRequest)
 
   val getTmStateAtTimeForPlayer
@@ -40,7 +38,7 @@ object TimeMachineEndpoints {
       "index"
     ) / PathCodec.int("playerId")
   )
-    .outCodec(HttpCodec.content[String](MediaType.application.json))
+    .outCodec(HttpCodec.content[String](MediaType.text.plain))
     .outError[Unit](Status.BadRequest)
 
 }

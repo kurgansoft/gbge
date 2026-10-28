@@ -1,18 +1,16 @@
 package chat.shared
 
 import gbge.shared.actions.GameAction
-import zio.json.{EncoderOps, JsonCodec}
-import zio.schema.{DeriveSchema, Schema}
+import zio.blocks.schema.Schema
+import zio.blocks.schema.json.JsonCodec
 
 sealed trait ChatAction extends GameAction {
-  override def convertToJson(): String =
-    this.toJson
+  override lazy val asJsonString: String =
+    ChatAction.jsonCodec.encodeToString(this)
 }
 
 object ChatAction {
-  implicit val schema: Schema[ChatAction] = DeriveSchema.gen
-  implicit val codec: JsonCodec[ChatAction] =
-    zio.schema.codec.JsonCodec.jsonCodec(schema)
+  val jsonCodec: JsonCodec[ChatAction] = Schema.derived.jsonCodec
 }
 
 case class SendMessage(message: String) extends ChatAction

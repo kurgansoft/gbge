@@ -27,13 +27,13 @@ object Urls {
   lazy val portalSocketURLForClients: String =
     webSocketPrefix + "/api/portalSocketForClients/"
 
-  val joinPostFix: String = "/join/"
-  val publicEvents: String = "/publicEvents/"
-  val nonPublicEvents: String = "/events/"
-  val performActionPostFix: String = "performAction/"
-  val setPortalCoordinatesPostFix: String = "/api/portalCoordinates/"
+  val joinPostFix: String = "/join"
+  val publicEvents: String = "/publicEvents"
+  val nonPublicEvents: String = "/events"
+  val performActionPostFix: String = "/performAction"
+  val setPortalCoordinatesPostFix: String = "/api/portalCoordinates"
 
-  val getPlayerPostFix: String = "player/"
+  val getPlayerPostFix: String = "/player"
 
-  val universeUrl: String = urlPrefix + "api/universe"
+  val universeUrl: String = urlPrefix + "/api/universe"
 }

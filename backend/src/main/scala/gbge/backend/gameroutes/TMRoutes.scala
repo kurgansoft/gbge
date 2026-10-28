@@ -7,7 +7,6 @@ import gbge.backend.services.state_manager.{
 }
 import zio.ZIO
 import zio.http.Route
-import zio.json.EncoderOps
 
 object TMRoutes {
   val actionHistoryRoute: Route[TimeMachine, Nothing] =
@@ -16,7 +15,7 @@ object TMRoutes {
         _ <- ZIO.log("actionHistoryRoute endpoint invoked...")
         timeMachine <- ZIO.service[TimeMachine]
         actionsAndInvokers <- timeMachine.actionsAndInvokers
-      } yield actionsAndInvokers
+      } yield actionsAndInvokers.encode.print
     )
 
   val getTmSpectatorStateAtTimeRoute: Route[TimeMachineStateManager, Nothing] =
@@ -36,13 +35,10 @@ object TMRoutes {
           case 0 => currentTimeMachineContent.original
           case n => currentTimeMachineContent.universes(n - 1)
         }
-        _ = println(
-          s"index: [$universeIndex] ==>\n${pprint.apply(universeAtThatTime).plainText}"
-        )
         result = universeAtThatTime
           .getFrontendUniverseForPlayer(None)
           .encode
-          .toJsonPretty
+          .print
       } yield result
     )
 
@@ -69,7 +65,7 @@ object TMRoutes {
           result = universeAtThatTime
             .getFrontendUniverseForPlayer(Some(playerId))
             .encode
-            .toJsonPretty
+            .print
         } yield result
       }
     )
@@ -98,7 +94,7 @@ object TMRoutes {
       for {
         stateManager <- ZIO.service[TimeMachine]
         actionStackInTransit <- stateManager.actionsAndInvokers
-        _ = os.write.over(os.pwd / fileName, actionStackInTransit.toJsonPretty)
+        _ = os.write.over(os.pwd / fileName, actionStackInTransit.encode.print)
         _ <- ZIO.log(s"saving current stack: [$actionStackInTransit]")
       } yield ()
     })

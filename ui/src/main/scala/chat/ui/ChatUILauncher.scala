@@ -4,7 +4,7 @@ import chat.shared.ClientChatGame
 import gbge.shared.FrontendGame
 import gbge.shared.actions.GameAction
 import gbge.ui.EntryPoint
-import zio.json.JsonCodec
+import zio.blocks.schema.json.JsonCodec
 
 import scala.scalajs.js.annotation.JSExportTopLevel
 
@@ -14,7 +14,8 @@ import scala.scalajs.js.annotation.JSExportTopLevel
 //@JSExportTopLevel("ep")
 object ChatUILauncher extends EntryPoint {
   gbge.shared.RG.gameCodecs = List(
-    ClientChatGame.codec.asInstanceOf[JsonCodec[FrontendGame[_ <: GameAction]]]
+    ClientChatGame.jsonCodec
+      .asInstanceOf[JsonCodec[FrontendGame[? <: GameAction]]]
   )
   gbge.ui.RG.registeredGames = List(ClientChatGameProps)
 }

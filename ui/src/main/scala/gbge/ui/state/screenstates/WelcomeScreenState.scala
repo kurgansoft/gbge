@@ -1,6 +1,5 @@
 package gbge.ui.state.screenstates
 
-import gbge.client.*
 import gbge.client.events_and_effects.{DispatchActionWithToken, ScreenEvent}
 import gbge.shared.FrontendUniverse
 import gbge.shared.actions.SelectGame

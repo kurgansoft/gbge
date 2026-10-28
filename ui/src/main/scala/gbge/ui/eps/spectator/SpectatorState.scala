@@ -25,7 +25,7 @@ case class SpectatorState(
     offlineState: OfflineState[Any] = EmptyOfflineState
 ) extends UIState[uiglue.Event, Clock] {
 
-  def getCurrentGame: Option[ClientGameProps[_, _]] = {
+  def getCurrentGame: Option[ClientGameProps[?, ?]] = {
     val selectedGameNumber = frontendUniverse.flatMap(_.selectedGame)
     selectedGameNumber.map(gbge.ui.RG.registeredGames(_))
   }

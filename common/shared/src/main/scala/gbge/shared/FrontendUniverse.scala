@@ -2,22 +2,20 @@ package gbge.shared
 
 import gbge.shared.FrontendUniverse.RawRepresentation
 import gbge.shared.actions.GameAction
-import zio.json.*
-import zio.schema.{DeriveSchema, Schema}
+import zio.blocks.schema.Schema
+import zio.blocks.schema.json.{Json, JsonCodec}
 
 case class FrontendUniverse(
     selectedGame: Option[Int] = None,
-    game: Option[FrontendGame[_ <: GameAction]] = None,
+    game: Option[FrontendGame[? <: GameAction]] = None,
     players: List[FrontendPlayer] = List.empty,
     playerIdToRoleLink: Map[Int, Int] = Map.empty
 ) {
 
-  import zio.json.ast.Json as Json
-
-  lazy val encode: zio.json.ast.Json = {
+  lazy val encode: Json = {
     val s = game.map(_.encode)
     val s2 = RawRepresentation(selectedGame, s, players, playerIdToRoleLink)
-    s2.toJsonAST.getOrElse(???)
+    RawRepresentation.codec.encodeToJson(s2)
   }
 
 }
@@ -25,54 +23,65 @@ case class FrontendUniverse(
 object FrontendUniverse {
 
   def decodeWithDecoder(
-      json: zio.json.ast.Json
-  )(implicit decoders: List[JsonDecoder[FrontendGame[_]]]): FrontendUniverse = {
-    val raw = RawRepresentation.codec.decoder.fromJsonAST(json).getOrElse(???)
+      json: Json
+  )(implicit
+      decoders: List[JsonCodec[FrontendGame[? <: GameAction]]]
+  ): FrontendUniverse = {
+    val raw = RawRepresentation.codec.decode(json) match {
+      case Right(value) => value
+      case Left(_)      =>
+        throw new RuntimeException("could not decode FrontendUniverse")
+    }
     val temp = FrontendUniverse(
       selectedGame = raw.selectedGame,
       players = raw.players,
       playerIdToRoleLink = raw.playerIdToRoleLink
     )
 
-    val decoder = raw.selectedGame.map(index => decoders(index))
-
-    val gameOption: Option[FrontendGame[_]] = (decoder, raw.game) match {
-      case (Some(d), Some(g)) => Some(d.fromJsonAST(g).getOrElse(???))
-      case _                  => None
+    val gameOption: Option[FrontendGame[? <: GameAction]] = raw.game.map {
+      jsonAst =>
+        val selectedGame: Int = raw.selectedGame.get
+        decoders(selectedGame).decode(jsonAst) match {
+          case Right(game) => game
+          case Left(_)     =>
+            throw new RuntimeException("could not decode game payload")
+        }
     }
     temp.copy(game = gameOption)
   }
 
-  def decode(json: zio.json.ast.Json): FrontendUniverse = {
-    val raw = RawRepresentation.codec.decoder.fromJsonAST(json).getOrElse(???)
+  def decode(json: Json): FrontendUniverse = {
+    val raw = RawRepresentation.codec.decode(json) match {
+      case Right(value) => value
+      case Left(_)      =>
+        throw new RuntimeException("could not decode FrontendUniverse")
+    }
     val temp = FrontendUniverse(
       selectedGame = raw.selectedGame,
       players = raw.players,
       playerIdToRoleLink = raw.playerIdToRoleLink
     )
 
-    val gameOption: Option[FrontendGame[_]] = raw.game.map(jsonAst => {
-      val selectedGame: Int = raw.selectedGame.get
-      gbge.shared.RG
-        .gameCodecs(selectedGame)
-        .decoder
-        .fromJsonAST(jsonAst)
-        .getOrElse(???)
-    })
+    val gameOption: Option[FrontendGame[? <: GameAction]] = raw.game.map {
+      jsonAst =>
+        val selectedGame: Int = raw.selectedGame.get
+        gbge.shared.RG.gameCodecs(selectedGame).decode(jsonAst) match {
+          case Right(game) => game
+          case Left(_)     =>
+            throw new RuntimeException("could not decode game payload")
+        }
+    }
     temp.copy(game = gameOption)
   }
 
   case class RawRepresentation(
       selectedGame: Option[Int],
-      game: Option[zio.json.ast.Json],
+      game: Option[Json],
       players: List[FrontendPlayer],
       playerIdToRoleLink: Map[Int, Int]
   )
 
   private object RawRepresentation {
-    implicit val schema: Schema[RawRepresentation] =
-      DeriveSchema.gen[RawRepresentation]
-    implicit val codec: JsonCodec[RawRepresentation] =
-      zio.schema.codec.JsonCodec.jsonCodec(schema)
+    val codec: JsonCodec[RawRepresentation] = Schema.derived.jsonCodec
   }
 }

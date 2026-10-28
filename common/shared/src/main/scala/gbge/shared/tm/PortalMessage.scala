@@ -1,15 +1,13 @@
 package gbge.shared.tm
 
 import gbge.shared.FrontendUniverse
-import zio.json._
-import zio.schema.{DeriveSchema, Schema}
+import zio.blocks.schema.Schema
+import zio.blocks.schema.json.JsonCodec
 
 sealed trait PortalMessage
 
 object PortalMessage {
-  implicit val schema: Schema[PortalMessage] = DeriveSchema.gen
-  implicit val codec: JsonCodec[PortalMessage] =
-    zio.schema.codec.JsonCodec.jsonCodec(schema)
+  val codec: JsonCodec[PortalMessage] = Schema.derived.jsonCodec
 }
 
 case class PortalMessageWithPayload(rawFU: String, perspective: Perspective)

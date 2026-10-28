@@ -1,14 +1,12 @@
 package gbge.shared.tm
 
-import zio.json.*
-import zio.schema.{DeriveSchema, Schema}
+import zio.blocks.schema.Schema
+import zio.blocks.schema.json.JsonCodec
 
 sealed trait TMMessage
 
 object TMMessage {
-  implicit val schema: Schema[TMMessage] = DeriveSchema.gen
-  implicit val codec: JsonCodec[TMMessage] =
-    zio.schema.codec.JsonCodec.jsonCodec(schema)
+  val codec: JsonCodec[TMMessage] = Schema.derived.jsonCodec
 }
 
 case class PortalId(id: Int) extends TMMessage

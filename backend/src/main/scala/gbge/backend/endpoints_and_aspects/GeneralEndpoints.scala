@@ -36,27 +36,27 @@ object GeneralEndpoints {
     .inCodec(HttpCodec.content[String](MediaType.text.plain))
     .outCodec(
       StatusCodec.Ok ++ HttpCodec
-        .content[JoinResponse](MediaType.application.json)
+        .content[String](MediaType.text.plain)
     )
     .outError[String](Status.BadRequest)
 
   val getFUEndpoint = Endpoint(RoutePattern.GET / "fu")
-    .outCodec(HttpCodec.content[String](MediaType.application.json))
+    .outCodec(HttpCodec.content[String](MediaType.text.plain))
 
   val getPlayerEndpoint = Endpoint(RoutePattern.GET / "player")
-    .outCodec(HttpCodec.content[Int](MediaType.application.json))
+    .outCodec(HttpCodec.content[Int](MediaType.text.plain))
 
   val performGeneralActionEndpoint
-      : Endpoint[Unit, GeneralAction, ZNothing, Unit, AuthType.Bearer] =
+      : Endpoint[Unit, String, ZNothing, Unit, AuthType.Bearer] =
     Endpoint(RoutePattern.POST / "performAction")
       .auth(AuthType.Bearer)
-      .inCodec(content[GeneralAction])
+      .inCodec(content[String])
       .outCodec(StatusCodec.Ok)
 
-  def generateGameSpecificActionEndpoint(game: BackendGameProps[_, _]) = {
+  def generateGameSpecificActionEndpoint(game: BackendGameProps[?, ?]) = {
     Endpoint(RoutePattern.POST / "performAction" / game.urlFragment)
       .auth(AuthType.Bearer)
-      .inCodec(game.contentCodec)
+      .inCodec(content[String])
       .outCodec(StatusCodec.Ok)
   }
 }

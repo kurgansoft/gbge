@@ -1,13 +1,10 @@
 package chat.shared
 
-import zio.json.JsonCodec
-import zio.schema.{DeriveSchema, Schema}
+import zio.blocks.schema.Schema
+import zio.blocks.schema.json.JsonCodec
 
 case class Message(roleNumber: Int, message: String)
 
 object Message {
-  implicit val schema: Schema[Message] = DeriveSchema.gen
-  implicit val codec: JsonCodec[Message] =
-    zio.schema.codec.JsonCodec.jsonCodec(schema)
-
+  val jsonCodec: JsonCodec[Message] = Schema.derived.jsonCodec
 }

@@ -1,14 +1,12 @@
 package gbge.shared
 
-import zio.json.JsonCodec
-import zio.schema.{DeriveSchema, Schema}
+import zio.blocks.schema.Schema
+import zio.blocks.schema.json.JsonCodec
 
 sealed trait GameState
 
 object GameState {
-  implicit val schema: Schema[GameState] = DeriveSchema.gen
-  implicit val codec: JsonCodec[GameState] =
-    zio.schema.codec.JsonCodec.jsonCodec(schema)
+  val codec: JsonCodec[GameState] = Schema.derived.jsonCodec
 
   case object NOT_STARTED extends GameState
   case object IN_PROGRESS extends GameState

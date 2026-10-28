@@ -29,8 +29,8 @@ object SseUtils {
       streamBody: ReadableStream[Uint8Array],
       onEventCallback: String => Unit
   )(implicit ec: ExecutionContext): Future[Unit] = {
-    val reader: ReadableStreamReader[_] =
-      streamBody.getReader().asInstanceOf[ReadableStreamReader[_]]
+    val reader: ReadableStreamReader[?] =
+      streamBody.getReader().asInstanceOf[ReadableStreamReader[?]]
     val decoder = Dynamic.newInstance(Dynamic.global.TextDecoder)()
 
     def readLoop(): Future[Unit] = for {

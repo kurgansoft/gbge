@@ -1,16 +1,14 @@
 package gbge.shared.tm
 
-import zio.json._
-import zio.schema.{DeriveSchema, Schema}
+import zio.blocks.schema.Schema
+import zio.blocks.schema.json.JsonCodec
 
 sealed trait Perspective {
   val id: Int
 }
 
 object Perspective {
-  implicit val schema: Schema[Perspective] = DeriveSchema.gen
-  implicit val codec: JsonCodec[Perspective] =
-    zio.schema.codec.JsonCodec.jsonCodec(schema)
+  val codec: JsonCodec[Perspective] = Schema.derived.jsonCodec
 
   def apply(number: Int): Perspective = {
     if (number == 0) SpectatorPerspective else PlayerPerspective(number)

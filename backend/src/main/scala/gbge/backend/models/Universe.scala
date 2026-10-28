@@ -16,10 +16,10 @@ object UniverseEffects {
 }
 
 case class Universe(
-    supportedGames: Seq[BackendGameProps[_, _]],
+    supportedGames: Seq[BackendGameProps[?, ?]],
     selectedGame: Option[Int] = None,
     game: Option[
-      BackendGame[_ <: GameAction, _ <: FrontendGame[_ <: GameAction]]
+      BackendGame[? <: GameAction, ? <: FrontendGame[? <: GameAction]]
     ] = None,
     //                    players: List[Player] = List.empty,
     players: Map[String, Player] = Map.empty,
@@ -127,12 +127,15 @@ case class Universe(
       failure: Failure
   ): Either[Failure, (Universe, IO[Nothing, Option[Action]])] = Left(failure)
 
+  @unchecked
   private def reduceKickPlayer(
       playerId: Int,
       player: Player
   ): Either[Failure, (Universe, IO[Nothing, Option[Action]])] = {
     if (player.isAdmin || player.id == playerId) {
-      players.find(pair => pair._2.id == playerId) match {
+      val invoker: Option[(String, Player)] =
+        players.find(pair => pair._2.id == playerId)
+      invoker match {
         case Some((tokenOfPlayerToKick, player)) if !player.isAdmin =>
           this.copy(players = players - tokenOfPlayerToKick)
         case Some((tokenOfPlayerToKick, player)) if player.isAdmin =>

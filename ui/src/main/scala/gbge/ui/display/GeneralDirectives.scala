@@ -13,7 +13,7 @@ object GeneralDirectives {
 
   def generalRoleDisplayer(
       players: List[FrontendPlayer],
-      frontendGame: FrontendGame[_]
+      frontendGame: FrontendGame[?]
   ): TagOf[Div] = {
     val allTheRoles = frontendGame.roles
     div(
@@ -47,7 +47,7 @@ object GeneralDirectives {
   def generalRoleChooserScreen(
       you: FrontendPlayer,
       players: List[FrontendPlayer],
-      frontendGame: FrontendGame[_],
+      frontendGame: FrontendGame[?],
       eventHandler: EventLoop.EventHandler[Event]
   ): TagOf[Div] = {
     val allTheRoles = frontendGame.roles

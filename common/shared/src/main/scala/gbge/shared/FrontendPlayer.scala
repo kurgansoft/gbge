@@ -1,7 +1,7 @@
 package gbge.shared
 
-import zio.json.*
-import zio.schema.{DeriveSchema, Schema}
+import zio.blocks.schema.Schema
+import zio.blocks.schema.json.JsonCodec
 
 case class FrontendPlayer(
     id: Int,
@@ -11,9 +11,7 @@ case class FrontendPlayer(
 )
 
 object FrontendPlayer {
-  implicit val schema: Schema[FrontendPlayer] = DeriveSchema.gen
-  implicit val codec: JsonCodec[FrontendPlayer] =
-    zio.schema.codec.JsonCodec.jsonCodec(schema)
+  val codec: JsonCodec[FrontendPlayer] = Schema.derived.jsonCodec
 
   def getNameOfPlayerWithRole(
       roleNumber: Int

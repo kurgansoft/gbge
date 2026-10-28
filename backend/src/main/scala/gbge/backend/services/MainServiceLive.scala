@@ -1,6 +1,5 @@
 package gbge.backend.services
 
-import gbge.backend.models.Universe
 import gbge.backend.services.state_manager.StateManager
 import gbge.backend.{Failure, BackendGameProps}
 import gbge.shared.JoinResponse
@@ -10,7 +9,7 @@ import zio.{IO, ZEnvironment, ZIO, ZLayer}
 case class MainServiceLive(
     tokenGenerator: TokenGenerator,
     stateManager: StateManager,
-    games: Seq[BackendGameProps[_, _]],
+    games: Seq[BackendGameProps[?, ?]],
     maxNoOfPlayers: Int = 12
 ) extends MainService {
   override def joinWithName(name: String): IO[Failure, JoinResponse] = for {
@@ -46,14 +45,14 @@ case class MainServiceLive(
 
 object MainServiceLive {
   val layer: ZLayer[
-    TokenGenerator & StateManager & Seq[BackendGameProps[_, _]],
+    TokenGenerator & StateManager & Seq[BackendGameProps[?, ?]],
     Nothing,
     MainService
   ] = ZLayer {
     for {
       tokenGenerator <- ZIO.service[TokenGenerator]
       stateManager <- ZIO.service[StateManager]
-      games <- ZIO.service[Seq[BackendGameProps[_, _]]]
+      games <- ZIO.service[Seq[BackendGameProps[?, ?]]]
     } yield MainServiceLive(tokenGenerator, stateManager, games)
   }
 }

@@ -10,6 +10,7 @@ import gbge.client.events_and_effects.{
 }
 import gbge.shared.FrontendUniverse
 import gbge.shared.tm.{
+  ActionStackInTransit,
   Perspective,
   PlayerPerspective,
   PortalCoordinates,
@@ -17,56 +18,51 @@ import gbge.shared.tm.{
 }
 import gbge.ui.Urls
 import gbge.ui.eps.tm.TimeMachineState
-import sttp.capabilities
 import sttp.capabilities.zio.ZioStreams
-import sttp.client4.impl.zio.FetchZioBackend
 import sttp.client4.{Request, UriContext, WebSocketStreamBackend, basicRequest}
-import sttp.tapir.DecodeResult
-import sttp.tapir.client.sttp4.SttpClientInterpreter
+import sttp.client4.asString
+import sttp.client4.impl.zio.FetchZioBackend
 import uiglue.EventLoop.EventHandler
 import zio.*
 import zio.ZIO.*
-import zio.json.JsonDecoder
-import zio.json.ast.Json
+import zio.blocks.schema.json.Json
 
 object TMEffects {
 
   private val backend: WebSocketStreamBackend[Task, ZioStreams] =
     FetchZioBackend()
 
-  private val sttpClientInterpreter = SttpClientInterpreter()
-
   private lazy val actionCodecs = gbge.ui.RG.registeredGames.map(_.actionCodec)
 
   val retrieveActionStack: UIO[List[TMClientEvent]] = {
-    val request = sttpClientInterpreter
-      .toRequest(gbge.client.endpoints.TimeMachineEndpoints.actionHistory, None)
-      .apply(())
+    val request: Request[Either[String, String]] =
+      basicRequest
+        .get(uri"${Urls.tmActionsPostFix}")
+
     for {
       _ <- ZIO.log("retrieving client TM")
-      result <- backend
+      lists <- backend
         .send(request)
-        .map(r =>
-          r.body match {
-            case failure: DecodeResult.Failure =>
-              println("failure was: " + failure)
-              List(TimeMachineRetrievalFailed)
-            case DecodeResult.Value(actionStackInTransit) =>
-              val actionsAndInvokers = actionStackInTransit
-                .getOrElse(???)
-                .toActionEntries()(actionCodecs)
-              println(
-                "the content is (time machine actions):\n\t" + actionsAndInvokers
-                  .map(_.action)
-                  .mkString("\n\t")
-              )
-              List(ActionsHaveArrived(actionsAndInvokers))
+        .map(response =>
+          response.body match {
+            case Left(message) => List(TimeMachineRetrievalFailed)
+            case Right(encodedActionStackAsString) =>
+              ActionStackInTransit.jsonCodec.decode(
+                encodedActionStackAsString
+              ) match {
+                case Left(error) =>
+                  List(TimeMachineRetrievalFailed)
+                case Right(actionStackInTransit: ActionStackInTransit) =>
+                  val actionEntries =
+                    actionStackInTransit.toActionEntries()(using actionCodecs)
+                  List(ActionsHaveArrived(actionEntries))
+              }
           }
         )
         .tapError(e => ZIO.log("error during [retrieveTimeMachine]: " + e))
         .tapDefect(d => ZIO.log("defect during [retrieveTimeMachine]: " + d))
         .orDie
-    } yield result
+    } yield lists
   }
 
   def retrieveTMState(
@@ -75,19 +71,17 @@ object TMEffects {
   ): UIO[List[TMClientEvent]] = {
     val request = perspective match {
       case SpectatorPerspective =>
-        sttpClientInterpreter
-          .toRequest(
-            gbge.client.endpoints.TimeMachineEndpoints.getTmSpectatorStateAtTime,
-            None
+        basicRequest
+          .get(
+            uri"${Urls.urlPrefix}tm/getSpectatorState/$actionNumber"
           )
-          .apply(actionNumber)
+          .response(asString)
       case PlayerPerspective(playerId) =>
-        sttpClientInterpreter
-          .toRequest(
-            gbge.client.endpoints.TimeMachineEndpoints.getTmStateAtTimeForPlayer,
-            None
+        basicRequest
+          .get(
+            uri"${Urls.urlPrefix}tm/getPlayerState/$actionNumber/$playerId"
           )
-          .apply(actionNumber, playerId)
+          .response(asString)
     }
 
     ZIO.log(
@@ -96,21 +90,15 @@ object TMEffects {
       .send(request)
       .map(response =>
         response.body match
-          case failure: DecodeResult.Failure =>
-            println("failure was: " + failure)
-            List.empty
-          case DecodeResult.Value(Left(_)) =>
-            println("different error")
-            List.empty
-          case DecodeResult.Value(Right(stateEncodedAsString)) =>
-            JsonDecoder[Json].decodeJson(stateEncodedAsString) match {
+          case Left(error) =>
+            List.empty[TMClientEvent]
+          case Right(stateEncodedAsString) =>
+            Json.jsonCodec.decode(stateEncodedAsString) match {
               case Right(json) =>
                 val fu: FrontendUniverse = FrontendUniverse.decode(json)
-                println(s"the decoded fu:\n$fu")
                 List(TMStateArrived(actionNumber, perspective, fu))
-              case _ =>
-                println("wrong data")
-                List.empty
+              case Left(error) =>
+                List.empty[TMClientEvent]
             }
       )
       .orDie
@@ -145,36 +133,36 @@ object TMEffects {
   }
 
   def resetTmToNumber(number: Int): UIO[List[TMClientEvent]] = {
-    val request = sttpClientInterpreter
-      .toRequest(gbge.client.endpoints.TimeMachineEndpoints.reset, None)
-      .apply(number)
-    for {
-      result <- backend
-        .send(request)
-        .map(response =>
-          response.body match
-            case failure: DecodeResult.Failure =>
-              println("failure was: " + failure)
-              List.empty[TMClientEvent]
-            case DecodeResult.Value(Left(_)) =>
-              println("different error")
-              List.empty[TMClientEvent]
-            case DecodeResult.Value(Right(_)) =>
-              List(TmGotShrunk(number))
-        )
-        .orDie
-    } yield result
+    val request = basicRequest
+      .post(uri"${Urls.resetTMPostFix}")
+      .body(number.toString)
+
+    backend
+      .send(request)
+      .map(response =>
+        response.body match
+          case Left(error) =>
+            List.empty[TMClientEvent]
+          case Right(_) =>
+            List(TmGotShrunk(number))
+      )
+      .orDie
   }
 
   val save: UIO[List[TMClientEvent]] = {
-    val request: Request[DecodeResult[Either[Nothing, Unit]]] =
-      sttpClientInterpreter.toRequest(
-        gbge.client.endpoints.TimeMachineEndpoints.save,
-        None
-      )(())
-    for {
-      _ <- backend.send(request).orDie
-    } yield List.empty
+    val request = basicRequest
+      .post(uri"/tm/save")
+
+    backend
+      .send(request)
+      .map(response =>
+        response.body match
+          case Left(error) =>
+            List.empty[TMClientEvent]
+          case Right(_) =>
+            List.empty[TMClientEvent]
+      )
+      .orDie
   }
 
   private def persistToHash(string: String): UIO[List[TMClientEvent]] = {

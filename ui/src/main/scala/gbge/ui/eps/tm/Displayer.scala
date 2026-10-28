@@ -43,7 +43,7 @@ object Displayer {
           tmState.status,
           tmState.actionsAndInvokers,
           tmState.selectedAction
-        )(eventHandler),
+        )(using eventHandler),
         div(
           display := "flex",
           flexDirection := "row",
@@ -51,14 +51,14 @@ object Displayer {
             tmState.selectedAction,
             tmState.selectedPerspective,
             tmState.actionsAndInvokers
-          )(eventHandler),
+          )(using eventHandler),
           Option.when(tmState.selectedPerspective.isDefined)(
             perspectiveDisplayer(
               tmState.selectedAction,
               tmState.selectedPerspective,
               tmState.componentDisplayMode,
               tmState.selectedClientState
-            )(eventHandler)
+            )(using eventHandler)
           )
         )(
           position := "fixed",
@@ -269,7 +269,7 @@ object Displayer {
   }
 
   def innerPerspectiveDisplayer(
-      uiState: UIState[_, _],
+      uiState: UIState[?, ?],
       componentDisplayMode: ComponentDisplayMode
   )(implicit eventHandler: EventHandler[TMClientEvent]): TagOf[html.Div] = {
     val spectatorBridge: EventLoop.EventHandler[Event] = event => {

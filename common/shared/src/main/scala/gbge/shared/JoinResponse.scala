@@ -1,12 +1,10 @@
 package gbge.shared
 
-import zio.json.JsonCodec
-import zio.schema.{DeriveSchema, Schema}
+import zio.blocks.schema.Schema
+import zio.blocks.schema.json.JsonCodec
 
 case class JoinResponse(id: Int, token: String)
 
 object JoinResponse {
-  implicit val schema: Schema[JoinResponse] = DeriveSchema.gen
-  implicit val codec: JsonCodec[JoinResponse] =
-    zio.schema.codec.JsonCodec.jsonCodec(schema)
+  val codec: JsonCodec[JoinResponse] = Schema.derived.jsonCodec
 }

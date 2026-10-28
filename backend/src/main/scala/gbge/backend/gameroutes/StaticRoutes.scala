@@ -42,7 +42,6 @@ case class StaticRoutes(
     else {
       val middlewares = devStaticRouteOptions.get.staticFileFolders.map({
         case (pathPrefix, filePath) =>
-          println(s"serving path [$filePath] with prefix [$pathPrefix]")
           Middleware.serveDirectory(Path(pathPrefix), new File(filePath))
       })
       middlewares.foldLeft(resourceRoutes)((routesAcc, middleware) =>

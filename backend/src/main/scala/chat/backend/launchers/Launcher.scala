@@ -2,8 +2,6 @@ package chat.backend.launchers
 
 import chat.backend.BackendChatGameProps
 import gbge.backend.config.GameConfig
-import gbge.backend.gameroutes.StaticRoutes
-import gbge.backend.gameroutes.StaticRoutes.DevStaticRouteOptions
 import gbge.backend.{BackendGameProps, GenericLauncher}
 import zio.{
   ConfigProvider,
@@ -17,7 +15,7 @@ import zio.{
 
 object Launcher extends ZIOAppDefault {
 
-  private val games: Seq[BackendGameProps[_, _]] = Seq(BackendChatGameProps)
+  private val games: Seq[BackendGameProps[?, ?]] = Seq(BackendChatGameProps)
 
   private val gl = GenericLauncher(games)
 

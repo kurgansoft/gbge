@@ -39,7 +39,7 @@ object ClientChatGameProps
               .map(message => {
                 val x2 = FrontendPlayer.getNameOfPlayerWithRole(
                   message.roleNumber
-                )(fu.players)
+                )(using fu.players)
                 Directives.messageDisplayer(x2, message.message)
               })
               .toTagMod
@@ -71,10 +71,11 @@ object ClientChatGameProps
         ),
         chat.messages
           .map(message => {
-            val x2 = FrontendPlayer.getNameOfPlayerWithRole(message.roleNumber)(
-              fu.players
-            )
-            Directives.messageDisplayer(x2, message.message)
+            val playerName =
+              FrontendPlayer.getNameOfPlayerWithRole(message.roleNumber)(using
+                fu.players
+              )
+            Directives.messageDisplayer(playerName, message.message)
           })
           .toTagMod,
         div(

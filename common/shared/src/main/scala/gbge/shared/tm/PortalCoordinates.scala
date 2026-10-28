@@ -1,7 +1,7 @@
 package gbge.shared.tm
 
-import zio.json.*
-import zio.schema.{DeriveSchema, Schema}
+import zio.blocks.schema.Schema
+import zio.blocks.schema.json.JsonCodec
 
 case class PortalCoordinates(
     portalId: Int,
@@ -10,7 +10,5 @@ case class PortalCoordinates(
 )
 
 object PortalCoordinates {
-  implicit val schema: Schema[PortalCoordinates] = DeriveSchema.gen
-  implicit val codec: JsonCodec[PortalCoordinates] =
-    zio.schema.codec.JsonCodec.jsonCodec(schema)
+  val codec: JsonCodec[PortalCoordinates] = Schema.derived.jsonCodec
 }

@@ -1,18 +1,16 @@
 package chat.shared
 
 import gbge.shared.FrontendGame
-import zio.json.JsonCodec
-import zio.schema.{DeriveSchema, Schema}
+import zio.blocks.schema.Schema
+import zio.blocks.schema.json.{Json, JsonCodec}
 
 case class ClientChatGame(override val messages: List[Message])
     extends AbstractChatGame
     with FrontendGame[ChatAction] {
-  override lazy val encode: zio.json.ast.Json =
-    ClientChatGame.codec.encoder.toJsonAST(this).getOrElse(???)
+  override lazy val encode: Json =
+    ClientChatGame.jsonCodec.encodeToJson(this)
 }
 
 object ClientChatGame {
-  implicit val schema: Schema[ClientChatGame] = DeriveSchema.gen[ClientChatGame]
-  implicit val codec: JsonCodec[ClientChatGame] =
-    zio.schema.codec.JsonCodec.jsonCodec(schema)
+  val jsonCodec: JsonCodec[ClientChatGame] = Schema.derived.jsonCodec
 }

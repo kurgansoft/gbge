@@ -5,22 +5,11 @@ import gbge.shared.actions.{GameAction, GeneralAction}
 import gbge.shared.{FrontendUniverse, JoinResponse}
 import gbge.ui.Urls
 import gbge.ui.token.TokenService
-import sttp.capabilities
 import sttp.capabilities.zio.ZioStreams
 import sttp.client4.impl.zio.FetchZioBackend
-import sttp.client4.ziojson.asJson
-import sttp.client4.{
-  Request,
-  ResponseException,
-  UriContext,
-  WebSocketStreamBackend,
-  basicRequest
-}
+import sttp.client4.{Request, UriContext, WebSocketStreamBackend, basicRequest}
 import uiglue.EventLoop
-import zio.json.*
 import zio.{Clock, Task, UIO, ZIO}
-
-import java.time.temporal.TemporalField
 
 object ClientEffects {
 
@@ -60,10 +49,8 @@ object ClientEffects {
         .map(response =>
           response.body match
             case Left(l) =>
-              println("the l: " + l.getClass + " - " + l)
               List(FailedToRecoverPlayer)
             case Right(playerId) =>
-              println("the decoded player is: " + playerId)
               List(
                 PlayerRecovered(playerId, token0)
               )
@@ -82,9 +69,10 @@ object ClientEffects {
       val jsonMessage = message.substring(
         6
       ) // The SSE message starts with 'data: ' that is why the first few characters are discarded
-      val ast = zio.json.ast.Json.decoder.decodeJson(jsonMessage).getOrElse(???)
-      val fu: FrontendUniverse = FrontendUniverse.decodeWithDecoder(ast)(
-        gbge.ui.RG.gameCodecs.map(_.decoder)
+      val ast =
+        zio.blocks.schema.json.Json.jsonCodec.decode(jsonMessage).getOrElse(???)
+      val fu: FrontendUniverse = FrontendUniverse.decodeWithDecoder(ast)(using
+        gbge.ui.RG.gameCodecs
       )
       eventHandler(NewFU(fu))
     }
@@ -108,10 +96,15 @@ object ClientEffects {
       epochMillisOfConnection <- clockService.instant.map(_.toEpochMilli)
       _ = eventHandler(ConnectionEstablished(epochMillisOfConnection))
       _ <- ZIO
-        .fromFuture(ec => SseUtils.processStream(response.body, onMessage)(ec))
+        .fromFuture(ec =>
+          SseUtils.processStream(response.body, onMessage)(using ec)
+        )
         .tapError(error =>
           for {
-            _ <- ZIO.log("connection error: " + error)
+            _ <- ZIO.log(
+              "connection error: " + error.getMessage + "\n\t" + error.getStackTrace
+                .mkString("\n\t")
+            )
             epochMillisOfDisconnection <- clockService.instant
               .map(_.toEpochMilli)
             _ = eventHandler(ConnectionBrokeDown(epochMillisOfDisconnection))
@@ -124,26 +117,32 @@ object ClientEffects {
       name: String
   ): ZIO[TokenService, Nothing, List[PlayerEvent]] = {
 
-    val request: Request[Either[ResponseException[String], JoinResponse]] =
+    val request: Request[Either[String, String]] =
       basicRequest
         .post(uri"${Urls.joinPostFix}")
         .body(name)
-        .response(asJson[JoinResponse])
-
-    println(s"about to send join request; [$name]")
 
     backend
       .send(request)
       .flatMap(response =>
         response.body match
-          case Left(_)             => ZIO.succeed(List.empty)
-          case Right(joinResponse) =>
-            for {
-              _ <- zio.Console.printLine("your id: " + joinResponse.id)
-              _ <- zio.Console.printLine("your token: " + joinResponse.token)
-              tokenService <- ZIO.service[TokenService]
-              _ <- tokenService.saveToken(joinResponse.token)
-            } yield List(JoinResponseEvent(joinResponse))
+          case Left(_)                     => ZIO.succeed(List.empty)
+          case Right(joinResponseAsString) =>
+            val ast = zio.blocks.schema.json.Json.jsonCodec
+              .decode(joinResponseAsString)
+              .getOrElse(???)
+            JoinResponse.codec.decode(ast) match {
+              case Left(schemaError) =>
+                ZIO.dieMessage("failed to decode response")
+              case Right(joinResponse: JoinResponse) =>
+                for {
+                  _ <- zio.Console.printLine("your id: " + joinResponse.id)
+                  _ <- zio.Console
+                    .printLine("your token: " + joinResponse.token)
+                  tokenService <- ZIO.service[TokenService]
+                  _ <- tokenService.saveToken(joinResponse.token)
+                } yield List(JoinResponseEvent(joinResponse))
+            }
       )
       .orDie
   }
@@ -156,7 +155,7 @@ object ClientEffects {
       .post(uri"${Urls.performActionPostFix}")
       .auth
       .bearer(token)
-      .body(asJson[GeneralAction](generalAction))
+      .body(generalAction.asJsonString)
     backend.send(request).orDie.as(List.empty)
   }
 

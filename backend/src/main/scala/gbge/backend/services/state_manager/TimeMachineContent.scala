@@ -34,7 +34,7 @@ case class TimeMachineContent(
     ActionStackInTransit(
       actionStack.zipWithIndex.toList.map({ case ((action, invoker), index) =>
         EncodedActionInvokerAndPlayers(
-          action.convertToJson(),
+          action.asJsonString,
           invoker,
           universes(index).players.values.map(_.toFrontendPlayer()).toList
         )
@@ -44,7 +44,7 @@ case class TimeMachineContent(
 
 object TimeMachineContent {
   def rebuildFromActionStack(
-      games: Seq[BackendGameProps[_, _]],
+      games: Seq[BackendGameProps[?, ?]],
       actionStack: Seq[(Action, Option[Int])]
   ): TimeMachineContent = {
     val universe = Universe(games)

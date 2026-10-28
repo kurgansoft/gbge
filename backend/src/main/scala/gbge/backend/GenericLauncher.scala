@@ -15,13 +15,13 @@ import gbge.backend.services.{
   SequentialTokenGenerator
 }
 import gbge.shared.tm.ActionStackInTransit
-import zio.http.{Route, Routes, Server}
+import zio.http.{Routes, Server}
 import zio.stream.SubscriptionRef
 import zio.{IO, Ref, Scope, ZEnvironment, ZIO, ZLayer}
 
 import java.net.InetSocketAddress
 
-case class GenericLauncher(games: Seq[BackendGameProps[_, _]]) {
+case class GenericLauncher(games: Seq[BackendGameProps[?, ?]]) {
 
   val launch: ZIO[Scope & GameConfig & Option[String], Any, Unit] = for {
     gameConfig <- ZIO.service[GameConfig]
@@ -37,7 +37,7 @@ case class GenericLauncher(games: Seq[BackendGameProps[_, _]]) {
     tmStateManager <- optionalTmContent match {
       case Some(timeMachineContent: TimeMachineContent) =>
         for {
-          _ <- ZIO.log(s"The recovered tm content: [$timeMachineContent]")
+          _ <- ZIO.log(s"The recovered TM content: [$timeMachineContent]")
           _ <- universeRef.set(timeMachineContent.latestUniverse)
           result <- TimeMachineStateManager.layerFromRecoveredTmContent.build
             .provideSomeEnvironment[Scope](scope =>
@@ -45,7 +45,9 @@ case class GenericLauncher(games: Seq[BackendGameProps[_, _]]) {
             )
         } yield result.get
       case None =>
-        ZIO.log("nothing was recovered...") *>
+        ZIO.log(
+          "No TM recovery file was provided, creating an empty time machine."
+        ) *>
           TimeMachineStateManager.layer.build
             .provideSomeEnvironment[Scope](scope =>
               scope ++ ZEnvironment(games)
@@ -103,22 +105,21 @@ case class GenericLauncher(games: Seq[BackendGameProps[_, _]]) {
   ): IO[Unit, TimeMachineContent] = for {
     _ <- ZIO.log(s"Attempting to rebuildActionStack from file [$fileName]")
     path = os.pwd / fileName
-    raw = os.read(path)
-    actionStackInTransit = ActionStackInTransit.jsonCodec.decoder
-      .decodeJson(raw)
+    raw: String = os.read(path)
+    actionStackInTransit = ActionStackInTransit.jsonCodec
+      .decode(raw)
       .getOrElse(???)
-    _ <- ZIO.log(s"decoded actionStackInTransit:\n$actionStackInTransit")
   } yield TimeMachineContent.rebuildFromActionStack(
     games,
     actionStackInTransit
-      .toActionEntries()(games.map(_.actionCodec).toList)
+      .toActionEntries()(using games.map(_.actionCodec).toList)
       .map(aip => (aip.action, aip.invoker))
   )
 
   private def printStartUpMessage(config: GameConfig): IO[Nothing, Unit] =
     (for {
       _ <- zio.Console.printLine(
-        "**************************************************************"
+        "\n**********************************************************************"
       )
       port = config.port
       _ <- zio.Console.printLine(s"\t Starting server with port [$port].")
@@ -131,7 +132,7 @@ case class GenericLauncher(games: Seq[BackendGameProps[_, _]]) {
         s"\t Visit [$address/s] to display the game board."
       )
       _ <- zio.Console.printLine(
-        "**************************************************************"
+        "**********************************************************************\n"
       )
     } yield ()).ignore
 

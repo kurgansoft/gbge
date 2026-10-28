@@ -2,8 +2,8 @@ package gbge.shared.tm
 
 import gbge.shared.FrontendPlayer
 import gbge.shared.actions.{Action, GameAction, GeneralAction}
-import zio.json.JsonCodec
-import zio.schema.{DeriveSchema, Schema}
+import zio.blocks.schema.Schema
+import zio.blocks.schema.json.JsonCodec
 
 case class EncodedActionInvokerAndPlayers(
     actionEncodedAsJson: String,
@@ -11,23 +11,22 @@ case class EncodedActionInvokerAndPlayers(
     players: List[FrontendPlayer]
 ) {
   def convertToActionAndInvoker()(implicit
-      actionCodecs: List[JsonCodec[_ <: GameAction]]
+      actionCodecs: List[JsonCodec[? <: GameAction]]
   ): ActionInvokerAndPlayers = {
     val interpretedAsGeneralAction =
-      GeneralAction.codec.decoder.decodeJson(actionEncodedAsJson)
+      GeneralAction.jsonCodec.decode(actionEncodedAsJson)
     interpretedAsGeneralAction match {
       case Right(generalAction) =>
         ActionInvokerAndPlayers(generalAction, invoker, players)
-      case _ =>
+      case Left(_) =>
         var index: Int = 0
         var action: Action = null
 
-        while action == null && index < actionCodecs.size
-        do {
-          actionCodecs(index).decoder.decodeJson(actionEncodedAsJson) match {
+        while action == null && index < actionCodecs.size do {
+          actionCodecs(index).decode(actionEncodedAsJson) match {
             case Right(decodedAction) =>
               action = decodedAction
-            case _ => ()
+            case Left(_) => ()
           }
           index += 1
         }
@@ -43,7 +42,6 @@ case class EncodedActionInvokerAndPlayers(
 }
 
 object EncodedActionInvokerAndPlayers {
-  implicit val schema: Schema[EncodedActionInvokerAndPlayers] = DeriveSchema.gen
-  implicit val jsonCodec: JsonCodec[EncodedActionInvokerAndPlayers] =
-    zio.schema.codec.JsonCodec.jsonCodec(schema)
+  val jsonCodec: JsonCodec[EncodedActionInvokerAndPlayers] =
+    Schema.derived.jsonCodec
 }

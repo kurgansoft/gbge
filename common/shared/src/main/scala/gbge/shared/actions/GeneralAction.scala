@@ -1,17 +1,15 @@
 package gbge.shared.actions
 
-import zio.json._
-import zio.schema.{DeriveSchema, Schema}
+import zio.blocks.schema.Schema
+import zio.blocks.schema.json.JsonCodec
 
 sealed trait GeneralAction extends Action {
-  override def convertToJson(): String =
-    this.toJson
+  override lazy val asJsonString: String =
+    GeneralAction.jsonCodec.encodeToString(this)
 }
 
 object GeneralAction {
-  implicit val schema: Schema[GeneralAction] = DeriveSchema.gen
-  implicit val codec: JsonCodec[GeneralAction] =
-    zio.schema.codec.JsonCodec.jsonCodec(schema)
+  val jsonCodec: JsonCodec[GeneralAction] = Schema.derived.jsonCodec
 }
 
 case class ProvideToken(token: String) extends GeneralAction {
@@ -26,17 +24,15 @@ sealed trait AdminAction extends GeneralAction {
   override val adminOnly: Boolean = true
 }
 
-case class SelectGame(gameNumber: Int) extends GeneralAction with AdminAction
+case class SelectGame(gameNumber: Int) extends AdminAction
 
-case object UnselectGame extends GeneralAction with AdminAction
+case object UnselectGame extends AdminAction
 
-case object CancelGame extends GeneralAction with AdminAction
+case object CancelGame extends AdminAction
 
-case object Start extends GeneralAction with AdminAction
+case object Start extends AdminAction
 
-case class DelegateAdminRole(idOfTheNewAdmin: Int)
-    extends GeneralAction
-    with AdminAction
+case class DelegateAdminRole(idOfTheNewAdmin: Int) extends AdminAction
 
 case class KickPlayer(playerId: Int) extends GeneralAction
 
@@ -50,10 +46,6 @@ case class UnassignRole(roleId: Int) extends GeneralAction
 
 case class InvalidAction(payload: String) extends GeneralAction
 
-case object IncreaseProposedNumberOfPlayers
-    extends GeneralAction
-    with AdminAction
+case object IncreaseProposedNumberOfPlayers extends AdminAction
 
-case object DecreaseProposedNumberOfPlayers
-    extends GeneralAction
-    with AdminAction
+case object DecreaseProposedNumberOfPlayers extends AdminAction
