@@ -4,7 +4,7 @@ import gbge.shared.actions.GameAction
 import sttp.client4.{Request, UriContext, basicRequest}
 import zio.blocks.schema.json.JsonCodec
 
-trait GameProps[GA <: GameAction, FG <: FrontendGame[GA]] {
+trait GameProps[GR <: GameRole, GA <: GameAction, FG <: FrontendGame[GR, GA]] {
   val name: String
   val urlFragment: String
 

@@ -9,7 +9,7 @@ import zio.{IO, ZEnvironment, ZIO, ZLayer}
 case class MainServiceLive(
     tokenGenerator: TokenGenerator,
     stateManager: StateManager,
-    games: Seq[BackendGameProps[?, ?]],
+    games: Seq[BackendGameProps[?, ?, ?]],
     maxNoOfPlayers: Int = 12
 ) extends MainService {
   override def joinWithName(name: String): IO[Failure, JoinResponse] = for {
@@ -45,14 +45,14 @@ case class MainServiceLive(
 
 object MainServiceLive {
   val layer: ZLayer[
-    TokenGenerator & StateManager & Seq[BackendGameProps[?, ?]],
+    TokenGenerator & StateManager & Seq[BackendGameProps[?, ?, ?]],
     Nothing,
     MainService
   ] = ZLayer {
     for {
       tokenGenerator <- ZIO.service[TokenGenerator]
       stateManager <- ZIO.service[StateManager]
-      games <- ZIO.service[Seq[BackendGameProps[?, ?]]]
+      games <- ZIO.service[Seq[BackendGameProps[?, ?, ?]]]
     } yield MainServiceLive(tokenGenerator, stateManager, games)
   }
 }

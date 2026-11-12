@@ -53,7 +53,7 @@ object GeneralEndpoints {
       .inCodec(content[String])
       .outCodec(StatusCodec.Ok)
 
-  def generateGameSpecificActionEndpoint(game: BackendGameProps[?, ?]) = {
+  def generateGameSpecificActionEndpoint(game: BackendGameProps[?, ?, ?]) = {
     Endpoint(RoutePattern.POST / "performAction" / game.urlFragment)
       .auth(AuthType.Bearer)
       .inCodec(content[String])

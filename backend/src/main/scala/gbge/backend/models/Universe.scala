@@ -2,33 +2,61 @@ package gbge.backend.models
 
 import gbge.backend.*
 import gbge.backend.services.TokenGenerator
-import gbge.shared.{FrontendGame, FrontendUniverse}
+import gbge.shared.{FrontendGame, FrontendUniverse, GameRole}
 import gbge.shared.actions.*
 import zio.{IO, ZIO}
 
 import scala.language.implicitConversions
 
-object UniverseEffects {
-//  val generateToken: Universe => UIO[List[Action]] = universe => {
-//    val token = universe.generateToken()
-//    ZIO.succeed(List(ProvideToken(token)))
-//  }
-}
+type Token = String
 
 case class Universe(
-    supportedGames: Seq[BackendGameProps[?, ?]],
+    supportedGames: Seq[BackendGameProps[?, ?, ?]],
     selectedGame: Option[Int] = None,
     game: Option[
-      BackendGame[? <: GameAction, ? <: FrontendGame[? <: GameAction]]
+      BackendGame[
+        ? <: GameRole,
+        ? <: GameAction,
+        ? <: FrontendGame[? <: GameRole, ? <: GameAction]
+      ]
     ] = None,
-    //                    players: List[Player] = List.empty,
-    players: Map[String, Player] = Map.empty,
+    players: Map[Token, Player] = Map.empty,
     candidate: Option[Player] = None,
-    //                    tokenIdMap: Map[String, Int] = Map.empty,
     nextPlayerId: Int = 1
 ) {
 
-//  def reduceJoin(name: String): Either[String, (Int, Universe)] = {
+  implicit def conversion1(
+      universe: Universe
+  ): Either[Failure, (Universe, IO[Nothing, Option[Action]])] =
+    Right(universe, ZIO.none)
+
+  implicit def conversion2(
+      failure: Failure
+  ): Either[Failure, (Universe, IO[Nothing, Option[Action]])] = Left(failure)
+
+  def reduce(action: Action, playerId: Option[Int] = None): Either[
+    Failure,
+    (Universe, ZIO[TokenGenerator, Nothing, Option[Action]])
+  ] = {
+    val player: Option[Player] = playerId.flatMap(id => getPlayerFromId(id))
+    action match {
+      case Join(name)          => reduceJoin(name)
+      case ProvideToken(token) =>
+        addTokenToCandidate(token)
+      case linkRoleToPlayer: LinkRoleToPlayer =>
+        reduceLinkRoleToPlayer(linkRoleToPlayer, player.get)
+      case unlinkPlayerFromRole: UnlinkPlayerFromRole =>
+        reduceUnlinkPlayerFromRole(unlinkPlayerFromRole, player.get)
+      case UnassignRole(role)       => reduceUnassignRole(role)
+      case NaturalLink(roles)       => reduceNaturalLink(roles)
+      case KickPlayer(playerId)     => reduceKickPlayer(playerId, player.get)
+      case adminAction: AdminAction =>
+        reduceAdminAction(adminAction, player.get)
+      case ga: GameAction => reduceGameAction(ga, player.get)
+      case _              => ???
+    }
+  }
+
   private def reduceJoin(name: String): Either[
     Failure,
     (Universe, ZIO[TokenGenerator, Nothing, Option[Action]])
@@ -83,49 +111,6 @@ case class Universe(
   private def getPlayerFromId(id: Int): Option[Player] = {
     players.values.find(_.id == id)
   }
-
-//  def generateToken(): String = {
-//    val randomTokens: Boolean = System.getProperty("randomTokens", "true").toBooleanOption.getOrElse(true)
-//
-//    val randomSuffix = if (randomTokens)
-//      scala.util.Random.between(1,10000).toString
-//    else ""
-//
-//    (nextPlayerId + 100).toString + randomSuffix
-//  }
-
-  def reduce(action: Action, playerId: Option[Int] = None): Either[
-    Failure,
-    (Universe, ZIO[TokenGenerator, Nothing, Option[Action]])
-  ] = {
-    val player: Option[Player] = playerId.flatMap(id => getPlayerFromId(id))
-    action match {
-      case Join(name)          => reduceJoin(name)
-      case ProvideToken(token) => {
-//        Right(addTokenToCandidate(token), ZIO.succeed(Seq.empty))
-        addTokenToCandidate(token)
-      }
-      case UnassignRole(role)       => reduceUnassignRole(role)
-      case KickPlayer(playerId)     => reduceKickPlayer(playerId, player.get)
-      case adminAction: AdminAction =>
-        reduceAdminAction(adminAction, player.get)
-      case linkRoleToPlayer: LinkRoleToPlayer =>
-        reduceLinkRoleToPlayer(linkRoleToPlayer, player.get)
-      case unlinkPlayerFromRole: UnlinkPlayerFromRole =>
-        reduceUnlinkPlayerFromRole(unlinkPlayerFromRole, player.get)
-      case NaturalLink(roles) => reduceNaturalLink(roles)
-      case ga: GameAction     => reduceGameAction(ga, player.get)
-      case _                  => ???
-    }
-  }
-
-  implicit def conversion1(
-      universe: Universe
-  ): Either[Failure, (Universe, IO[Nothing, Option[Action]])] =
-    Right(universe, ZIO.none)
-  implicit def conversion2(
-      failure: Failure
-  ): Either[Failure, (Universe, IO[Nothing, Option[Action]])] = Left(failure)
 
   @unchecked
   private def reduceKickPlayer(
@@ -231,18 +216,6 @@ case class Universe(
     }
   }
 
-//  private def reduceProvideToken(token: String): (Universe, UniverseResult) = {
-//    if (!joinInProgress) {
-//      (this, GeneralFailure("No join is in progress"))
-//    } else if (players.exists(_.token == token)) {
-//      (this.copy(candidate = None), GeneralFailure("Token is already in use"))
-//    } else {
-//      val player = candidate.get.copy(token = token)
-//      val frontendPlayer = player.toFrontendPlayer().copy(token=Some(token))
-//      (this.copy(nextPlayerId = nextPlayerId+1, players = players.appended(player), candidate = None), OKWithPlayerPayload(frontendPlayer))
-//    }
-//  }
-
   private def reduceUnassignRole(
       role: Int
   ): Either[Failure, (Universe, IO[Nothing, Option[Action]])] = {
@@ -255,37 +228,6 @@ case class Universe(
     }))
 
   }
-
-//  def addTokenToCandidate(token: String): Universe =
-//    this.candidate match
-//      case Left(_) => throw new RuntimeException("should never happen")
-//      case Right(c) =>
-//        this.copy(
-//          candidate = Left(""),
-////          tokenIdMap = tokenIdMap.updated(token, c.id),
-////          players = players.appended(c),
-//          nextPlayerId = nextPlayerId + 1,
-//        )
-
-//  private def reduceJoin(name: String): (Universe, UniverseResult) = {
-//    val player: Either[Player, String] = {
-//      if (players.isEmpty)
-//        Left(Player(nextPlayerId, name, isAdmin = true))
-//      else if (players.size < Universe.MAX_PLAYER_NUMBER) {
-//        if (players.exists(_.name.equalsIgnoreCase(name)))
-//          Right("A player with a similar name has already joined.")
-//        else
-//          Left(Player(nextPlayerId, name))
-//      }
-//      else
-//        Right("Already full.")
-//    }
-//    if (player.isLeft) {
-//      val theCandidate = player.swap.getOrElse(null)
-//      (this.copy(candidate = Some(theCandidate)), ExecuteEffect(UniverseEffects.generateToken))
-//    } else
-//      (this, GeneralFailure(player.getOrElse("")))
-//  }
 
   private def reduceSelect(
       gameNumber: Int
@@ -341,7 +283,7 @@ case class Universe(
     else
       this.copy(selectedGame = None)
   }
-//
+
   private def reduceLinkRoleToPlayer(
       linkRoleToPlayer: LinkRoleToPlayer,
       player: Player
@@ -372,12 +314,24 @@ case class Universe(
     if (isAdmin || selfLinking) {
       if (game.isEmpty) {
         GeneralFailure("Cannot link while there is no game...")
-      } else if (!game.get.roles.exists(_.roleId == linkRoleToPlayer.role)) {
-        GeneralFailure("This role is unavailable for the current game.")
       } else {
-        executeLinking match
-          case Left(failure) => failure
-          case Right(u)      => u
+        val backendGame = game.get
+        val gameRoleMaybe = backendGame.getRoleById(linkRoleToPlayer.role)
+
+        gameRoleMaybe match {
+          case None =>
+            GeneralFailure(
+              s"Role with id [${linkRoleToPlayer.role}] does not exist."
+            )
+          case Some(role) =>
+            backendGame.roleIsAvailable(role) match {
+              case Left(errorMessage) => GeneralFailure(errorMessage)
+              case Right(_)           =>
+                executeLinking match
+                  case Left(failure) => failure
+                  case Right(u)      => u
+            }
+        }
       }
     } else {
       Left(UnauthorizedFailure("Not entitled to do that."))
@@ -443,9 +397,6 @@ case class Universe(
       this.players.values.map(_.toFrontendPlayer()).toList.sortBy(_.id)
     )
   }
-//
-//  def getPlayerWithToken(token: String): Option[Player] = ???
-//    //players.find(_.token == token)
 
 }
 

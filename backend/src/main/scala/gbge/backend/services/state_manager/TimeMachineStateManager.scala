@@ -61,21 +61,22 @@ case class TimeMachineStateManager(
 }
 
 object TimeMachineStateManager {
-  val layer
-      : ZLayer[Seq[BackendGameProps[?, ?]], Nothing, TimeMachineStateManager] =
+  val layer: ZLayer[Seq[
+    BackendGameProps[?, ?, ?]
+  ], Nothing, TimeMachineStateManager] =
     ZLayer {
       for {
-        games <- ZIO.service[Seq[BackendGameProps[?, ?]]]
+        games <- ZIO.service[Seq[BackendGameProps[?, ?, ?]]]
         u = Universe(games)
         uref <- SubscriptionRef.make(TimeMachineContent(u))
       } yield TimeMachineStateManager(uref)
     }
 
   val layerFromRecoveredTmContent: ZLayer[Seq[
-    BackendGameProps[?, ?]
+    BackendGameProps[?, ?, ?]
   ] & TimeMachineContent, Nothing, TimeMachineStateManager] = ZLayer {
     for {
-      games <- ZIO.service[Seq[BackendGameProps[?, ?]]]
+      games <- ZIO.service[Seq[BackendGameProps[?, ?, ?]]]
       recoveredTmContent <- ZIO.service[TimeMachineContent]
       _ = assert(
         recoveredTmContent.latestUniverse.supportedGames.toSet == games.toSet

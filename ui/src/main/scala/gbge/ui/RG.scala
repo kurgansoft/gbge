@@ -1,18 +1,18 @@
 package gbge.ui
 
-import gbge.shared.FrontendGame
+import gbge.shared.{FrontendGame, GameRole}
 import gbge.shared.actions.GameAction
 import zio.blocks.schema.json.JsonCodec
 
 object RG {
-  var registeredGames
-      : List[ClientGameProps[? <: GameAction, ? <: FrontendGame[?]]] =
+  var registeredGames: List[ClientGameProps[?, ?, ?]] =
     List.empty
 
-  lazy val gameCodecs: List[JsonCodec[FrontendGame[? <: GameAction]]] =
+  lazy val gameCodecs
+      : List[JsonCodec[FrontendGame[? <: GameRole, ? <: GameAction]]] =
     registeredGames
       .map(_.gameCodec)
-      .asInstanceOf[List[
-        JsonCodec[FrontendGame[?]]
-      ]] // DOES NOT work without explicit casting
+      .asInstanceOf[
+        List[JsonCodec[FrontendGame[? <: GameRole, ? <: GameAction]]]
+      ] // DOES NOT work without explicit casting
 }

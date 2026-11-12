@@ -42,12 +42,12 @@ case class ClientState(
     matchedRole <- allRoles.find(_.roleId == yourRoleId)
   } yield matchedRole
 
-  def getPropsOfTheCurrentGame: Option[ClientGameProps[?, ?]] = {
+  def getPropsOfTheCurrentGame: Option[ClientGameProps[?, ?, ?]] = {
     val selectedGameNumber = frontendUniverse.flatMap(_.selectedGame)
     selectedGameNumber.map(gbge.ui.RG.registeredGames(_))
   }
 
-  def getCurrentGame: Option[ClientGameProps[?, ?]] = {
+  def getCurrentGame: Option[ClientGameProps[?, ?, ?]] = {
     val selectedGameNumber = frontendUniverse.flatMap(_.selectedGame)
     selectedGameNumber.map(gbge.ui.RG.registeredGames(_))
   }

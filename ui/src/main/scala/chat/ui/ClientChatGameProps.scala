@@ -1,6 +1,12 @@
 package chat.ui
 
-import chat.shared.{ChatAction, ChatGameProps, ClientChatGame, SendMessage}
+import chat.shared.{
+  ChatAction,
+  ChatGameProps,
+  ClientChatGame,
+  SendMessage,
+  Speaker
+}
 import gbge.client.events_and_effects.DispatchActionWithToken
 import gbge.shared.FrontendPlayer
 import gbge.ui.ClientGameProps
@@ -13,7 +19,7 @@ import uiglue.EventLoop.EventHandler
 
 object ClientChatGameProps
     extends ChatGameProps
-    with ClientGameProps[ChatAction, ClientChatGame] {
+    with ClientGameProps[Speaker, ChatAction, ClientChatGame] {
 
   override val spectatorDisplayer
       : (SpectatorState, EventHandler[uiglue.Event]) => VdomTagOf[Div] =

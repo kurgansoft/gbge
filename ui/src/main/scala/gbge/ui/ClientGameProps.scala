@@ -1,6 +1,6 @@
 package gbge.ui
 
-import gbge.shared.{FrontendGame, FrontendUniverse, GameProps}
+import gbge.shared.{FrontendGame, FrontendUniverse, GameProps, GameRole}
 import gbge.shared.actions.GameAction
 import gbge.ui.eps.player.ClientState
 import gbge.ui.eps.spectator.SpectatorState
@@ -10,8 +10,11 @@ import uiglue.{Event, EventLoop}
 import zio.{UIO, ZIO}
 import japgolly.scalajs.react.vdom.all.*
 
-trait ClientGameProps[GA <: GameAction, FG <: FrontendGame[GA]]
-    extends GameProps[GA, FG] {
+trait ClientGameProps[
+    GR <: GameRole,
+    GA <: GameAction,
+    FG <: FrontendGame[GR, GA]
+] extends GameProps[GR, GA, FG] {
   val handleNewFU: (ClientState, FrontendUniverse) => (
       ClientState,
       EventLoop.EventHandler[Event] => UIO[List[Event]]

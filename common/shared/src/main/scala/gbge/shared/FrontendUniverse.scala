@@ -7,7 +7,7 @@ import zio.blocks.schema.json.{Json, JsonCodec}
 
 case class FrontendUniverse(
     selectedGame: Option[Int] = None,
-    game: Option[FrontendGame[? <: GameAction]] = None,
+    game: Option[FrontendGame[? <: GameRole, ? <: GameAction]] = None,
     players: List[FrontendPlayer] = List.empty,
     playerIdToRoleLink: Map[Int, Int] = Map.empty
 ) {
@@ -25,7 +25,7 @@ object FrontendUniverse {
   def decodeWithDecoder(
       json: Json
   )(implicit
-      decoders: List[JsonCodec[FrontendGame[? <: GameAction]]]
+      decoders: List[JsonCodec[FrontendGame[? <: GameRole, ? <: GameAction]]]
   ): FrontendUniverse = {
     val raw = RawRepresentation.codec.decode(json) match {
       case Right(value) => value
@@ -38,15 +38,15 @@ object FrontendUniverse {
       playerIdToRoleLink = raw.playerIdToRoleLink
     )
 
-    val gameOption: Option[FrontendGame[? <: GameAction]] = raw.game.map {
-      jsonAst =>
+    val gameOption: Option[FrontendGame[? <: GameRole, ? <: GameAction]] =
+      raw.game.map { jsonAst =>
         val selectedGame: Int = raw.selectedGame.get
         decoders(selectedGame).decode(jsonAst) match {
           case Right(game) => game
           case Left(_)     =>
             throw new RuntimeException("could not decode game payload")
         }
-    }
+      }
     temp.copy(game = gameOption)
   }
 
@@ -62,15 +62,15 @@ object FrontendUniverse {
       playerIdToRoleLink = raw.playerIdToRoleLink
     )
 
-    val gameOption: Option[FrontendGame[? <: GameAction]] = raw.game.map {
-      jsonAst =>
+    val gameOption: Option[FrontendGame[? <: GameRole, ? <: GameAction]] =
+      raw.game.map { jsonAst =>
         val selectedGame: Int = raw.selectedGame.get
         gbge.shared.RG.gameCodecs(selectedGame).decode(jsonAst) match {
           case Right(game) => game
           case Left(_)     =>
             throw new RuntimeException("could not decode game payload")
         }
-    }
+      }
     temp.copy(game = gameOption)
   }
 

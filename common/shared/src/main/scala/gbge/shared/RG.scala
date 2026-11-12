@@ -4,5 +4,7 @@ import gbge.shared.actions.GameAction
 import zio.blocks.schema.json.JsonCodec
 
 object RG {
-  var gameCodecs: List[JsonCodec[FrontendGame[? <: GameAction]]] = List.empty
+  var gameCodecs
+      : List[JsonCodec[FrontendGame[? <: GameRole, ? <: GameAction]]] =
+    List.empty
 }

@@ -6,7 +6,7 @@ import zio.blocks.schema.json.{Json, JsonCodec}
 
 case class ClientChatGame(override val messages: List[Message])
     extends AbstractChatGame
-    with FrontendGame[ChatAction] {
+    with FrontendGame[Speaker, ChatAction] {
   override lazy val encode: Json =
     ClientChatGame.jsonCodec.encodeToJson(this)
 }

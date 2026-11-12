@@ -96,7 +96,7 @@ object GameRoutes {
     )
 
   def generateGameSpecificActionRoute(
-      game: BackendGameProps[?, ?]
+      game: BackendGameProps[?, ?, ?]
   ): Route[Player & MainService, Nothing] =
     GeneralEndpoints
       .generateGameSpecificActionEndpoint(game)

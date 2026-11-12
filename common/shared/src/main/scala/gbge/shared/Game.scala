@@ -1,11 +1,13 @@
 package gbge.shared
 
-trait Game {
+import gbge.shared.actions.GameAction
+
+trait Game[GR <: GameRole, GA <: GameAction] {
   val minPlayerNumber: Int
   val maxPlayerNumber: Int
 
-  val roles: List[GameRole]
+  val roles: List[GR]
 
-  def getRoleById(id: Int): Option[GameRole] = roles.find(_.roleId == id)
+  def getRoleById(id: Int): Option[GR] = roles.find(_.roleId == id)
 
 }

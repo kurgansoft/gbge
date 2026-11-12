@@ -44,7 +44,7 @@ case class TimeMachineContent(
 
 object TimeMachineContent {
   def rebuildFromActionStack(
-      games: Seq[BackendGameProps[?, ?]],
+      games: Seq[BackendGameProps[?, ?, ?]],
       actionStack: Seq[(Action, Option[Int])]
   ): TimeMachineContent = {
     val universe = Universe(games)

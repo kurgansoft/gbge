@@ -10,7 +10,7 @@ import zio.{IO, ZIO}
 
 case class ChatGame(override val messages: List[Message] = List.empty)
     extends AbstractChatGame
-    with BackendGame[ChatAction, ClientChatGame] {
+    with BackendGame[Speaker, ChatAction, ClientChatGame] {
   override val state: GameState = IN_PROGRESS
 
   override val noOfPlayers: Int = 6

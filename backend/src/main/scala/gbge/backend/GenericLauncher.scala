@@ -21,7 +21,7 @@ import zio.{IO, Ref, Scope, ZEnvironment, ZIO, ZLayer}
 
 import java.net.InetSocketAddress
 
-case class GenericLauncher(games: Seq[BackendGameProps[?, ?]]) {
+case class GenericLauncher(games: Seq[BackendGameProps[?, ?, ?]]) {
 
   val launch: ZIO[Scope & GameConfig & Option[String], Any, Unit] = for {
     gameConfig <- ZIO.service[GameConfig]

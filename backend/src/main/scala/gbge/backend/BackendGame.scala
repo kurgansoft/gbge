@@ -7,7 +7,8 @@ import zio.IO
 
 import scala.language.implicitConversions
 
-trait BackendGame[GA <: GameAction, FG <: FrontendGame[GA]] extends Game {
+trait BackendGame[GR <: GameRole, GA <: GameAction, FG <: FrontendGame[GR, GA]]
+    extends Game[GR, GA] {
 
   implicit def cnToTuple2(result: UniverseResult): (Any, UniverseResult) =
     (this, result)
@@ -16,9 +17,11 @@ trait BackendGame[GA <: GameAction, FG <: FrontendGame[GA]] extends Game {
 
   val noOfPlayers: Int
 
+  def roleIsAvailable(gameRole: GameRole): Either[String, Unit] = Right(())
+
   def increaseRoomSize(): Either[
     Failure,
-    (BackendGame[? <: GA, ? <: FG], IO[Nothing, Option[Action]])
+    (BackendGame[? <: GR, ? <: GA, ? <: FG], IO[Nothing, Option[Action]])
   ] =
     Left(
       GeneralFailure("Increasing the room size is not supported in this game!")
@@ -26,7 +29,7 @@ trait BackendGame[GA <: GameAction, FG <: FrontendGame[GA]] extends Game {
 
   def decreaseRoomSize(): Either[
     Failure,
-    (BackendGame[? <: GA, ? <: FG], IO[Nothing, Option[Action]])
+    (BackendGame[? <: GR, ? <: GA, ? <: FG], IO[Nothing, Option[Action]])
   ] =
     Left(
       GeneralFailure("Decreasing the room size is not supported in this game!")
@@ -34,17 +37,9 @@ trait BackendGame[GA <: GameAction, FG <: FrontendGame[GA]] extends Game {
 
   def reduce(gameAction: GameAction, invoker: Player): Either[
     Failure,
-    (BackendGame[? <: GA, ? <: FG], IO[Nothing, Option[Action]])
+    (BackendGame[? <: GR, ? <: GA, ? <: FG], IO[Nothing, Option[Action]])
   ]
 
   def toFrontendGame(role: Option[Int] = None): FG
-
-  def idToRoleDescription(id: Int): Option[String] = {
-    try {
-      Some(roles(id).toString)
-    } catch {
-      case e: Exception => None
-    }
-  }
 
 }
