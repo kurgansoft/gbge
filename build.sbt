@@ -3,7 +3,7 @@ ThisBuild / scalaVersion := "3.9.0"
 ThisBuild / organization := "com.github.kurgansoft"
 
 val zioVersion = "2.1.27"
-val sttpVersion = "4.1.0"
+val sttpVersion = "4.1.1"
 
 lazy val common = crossProject(JSPlatform, JVMPlatform).in(file("common")).
   settings(
@@ -26,7 +26,7 @@ lazy val backend = project.in(file("backend")).settings(
   scalacOptions ++= Seq("-experimental"),
   libraryDependencies ++= Seq(
     "dev.zio" %% "zio-http" % "3.11.6",
-    "com.lihaoyi" %% "os-lib" % "0.11.9",
+    "com.lihaoyi" %% "os-lib" % "0.11.10",
     "dev.zio" %% "zio-mock" % "1.0.0-RC12"
   ),
 ).dependsOn(common.jvm)
