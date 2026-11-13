@@ -7,7 +7,7 @@ import zio.blocks.schema.json.{Json, JsonCodec}
 
 case class FrontendUniverse(
     selectedGame: Option[Int] = None,
-    game: Option[FrontendGame[? <: GameRole, ? <: GameAction]] = None,
+    game: Option[FrontendGame[?, ?]] = None,
     players: List[FrontendPlayer] = List.empty,
     playerIdToRoleLink: Map[Int, Int] = Map.empty
 ) {
@@ -25,7 +25,7 @@ object FrontendUniverse {
   def decodeWithDecoder(
       json: Json
   )(implicit
-      decoders: List[JsonCodec[FrontendGame[? <: GameRole, ? <: GameAction]]]
+      decoders: List[JsonCodec[FrontendGame[?, ?]]]
   ): FrontendUniverse = {
     val raw = RawRepresentation.codec.decode(json) match {
       case Right(value) => value

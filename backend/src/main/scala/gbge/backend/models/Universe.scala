@@ -13,13 +13,7 @@ type Token = String
 case class Universe(
     supportedGames: Seq[BackendGameProps[?, ?, ?]],
     selectedGame: Option[Int] = None,
-    game: Option[
-      BackendGame[
-        ? <: GameRole,
-        ? <: GameAction,
-        ? <: FrontendGame[? <: GameRole, ? <: GameAction]
-      ]
-    ] = None,
+    game: Option[BackendGame[?, ?, ?]] = None,
     players: Map[Token, Player] = Map.empty,
     candidate: Option[Player] = None,
     nextPlayerId: Int = 1
@@ -185,11 +179,12 @@ case class Universe(
           if (game.isEmpty)
             GeneralFailure("There is no game.")
           else {
+            val theGame = game.get
             val gameResult = adminAction match {
               case IncreaseProposedNumberOfPlayers =>
-                game.get.increaseRoomSize()
+                theGame.increaseRoomSize()
               case DecreaseProposedNumberOfPlayers =>
-                game.get.decreaseRoomSize()
+                theGame.decreaseRoomSize()
               case _ => ??? // This can never happen
             }
             gameResult match
@@ -206,7 +201,8 @@ case class Universe(
       invokingPlayer: Player
   ): Either[Failure, (Universe, IO[Nothing, Option[Action]])] = {
     if (game.isDefined) {
-      val reduceResult = game.get.reduce(ga, invokingPlayer)
+      val theGame = game.get
+      val reduceResult = theGame.reduce(ga, invokingPlayer)
       reduceResult match
         case Left(error)                  => Left(error)
         case Right((reducedGame, effect)) =>
@@ -288,7 +284,9 @@ case class Universe(
       linkRoleToPlayer: LinkRoleToPlayer,
       player: Player
   ): Either[Failure, (Universe, IO[Nothing, Option[Action]])] = {
-    lazy val executeLinking: Either[Failure, Universe] = {
+    def executeLinking(
+        modifiedGame: BackendGame[?, ?, ?]
+    ): Either[Failure, Universe] = {
       val playerId = linkRoleToPlayer.playerId
       val role = linkRoleToPlayer.role
       val tokenAndTarget = players.find(pair => pair._2.id == playerId)
@@ -304,7 +302,12 @@ case class Universe(
           val (token, target) = tokenAndTarget.get
           val updatedTarget = target.copy(role = Some(role))
           val newPlayers = players.updated(token, updatedTarget)
-          Right(this.copy(players = newPlayers))
+          Right(
+            this.copy(
+              players = newPlayers,
+              game = Some(modifiedGame)
+            )
+          )
         }
       }
     }
@@ -316,7 +319,8 @@ case class Universe(
         GeneralFailure("Cannot link while there is no game...")
       } else {
         val backendGame = game.get
-        val gameRoleMaybe = backendGame.getRoleById(linkRoleToPlayer.role)
+        val gameRoleMaybe =
+          backendGame.allPossibleRoles.find(_.roleId == linkRoleToPlayer.role)
 
         gameRoleMaybe match {
           case None =>
@@ -324,12 +328,10 @@ case class Universe(
               s"Role with id [${linkRoleToPlayer.role}] does not exist."
             )
           case Some(role) =>
-            backendGame.roleIsAvailable(role) match {
-              case Left(errorMessage) => GeneralFailure(errorMessage)
-              case Right(_)           =>
-                executeLinking match
-                  case Left(failure) => failure
-                  case Right(u)      => u
+            backendGame.registerRoleById(linkRoleToPlayer.role) match {
+              case Left(failure)       => Left(failure)
+              case Right(modifiedGame) =>
+                executeLinking(modifiedGame).map(u => (u, ZIO.none))
             }
         }
       }
@@ -350,6 +352,7 @@ case class Universe(
       } else {
         val playerId = unlinkPlayerFromRole.playerId
         val target = players.values.find(player => player.id == playerId)
+        val theGame = game.get
 
         if (target.isEmpty) {
           GeneralFailure("No player with such id.")
@@ -365,7 +368,11 @@ case class Universe(
               else
                 p
             })
-            this.copy(players = newPlayers)
+            this.copy(
+              players = newPlayers,
+              game =
+                Some(theGame.unRegisterRoleByIdIfNeeded(target.get.role.get))
+            )
           }
         }
       }
@@ -385,7 +392,7 @@ case class Universe(
           kvp._1).toMap
     this.copy(players = playersUpdatedWithRoles)
   }
-//
+
   def getFrontendUniverseForPlayer(
       playerId: Option[Int] = None
   ): FrontendUniverse = {
@@ -393,7 +400,7 @@ case class Universe(
       playerId.flatMap(pi => players.find(_._2.id == pi)).flatMap(_._2.role)
     FrontendUniverse(
       selectedGame,
-      game.map(_.toFrontendGame(role)),
+      game.map[FrontendGame[?, ?]](_.toFrontendGame(role)),
       this.players.values.map(_.toFrontendPlayer()).toList.sortBy(_.id)
     )
   }

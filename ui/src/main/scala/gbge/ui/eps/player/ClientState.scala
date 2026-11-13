@@ -32,7 +32,7 @@ case class ClientState(
   lazy val allRoles: List[GameRole] = (for {
     fu <- frontendUniverse
     game <- fu.game
-  } yield game.roles).getOrElse(List.empty)
+  } yield game.allPossibleRoles.toList.sortBy(_.roleId)).getOrElse(List.empty)
 
   lazy val isAdmin: Boolean = playerMaybe.exists(_.isAdmin)
 

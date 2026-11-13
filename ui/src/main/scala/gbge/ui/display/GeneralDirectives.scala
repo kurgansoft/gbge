@@ -15,7 +15,7 @@ object GeneralDirectives {
       players: List[FrontendPlayer],
       frontendGame: FrontendGame[?, ?]
   ): TagOf[Div] = {
-    val allTheRoles = frontendGame.roles
+    val allTheRoles = frontendGame.allPossibleRoles
     div(
       display := "flex",
       flexDirection := "row",
@@ -50,7 +50,7 @@ object GeneralDirectives {
       frontendGame: FrontendGame[?, ?],
       eventHandler: EventLoop.EventHandler[Event]
   ): TagOf[Div] = {
-    val allTheRoles = frontendGame.roles
+    val allTheRoles = frontendGame.allPossibleRoles
     val availableRoles = allTheRoles.filterNot(role2 =>
       players.exists(_.role.contains(role2.roleId))
     )
