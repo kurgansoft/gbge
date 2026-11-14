@@ -285,7 +285,7 @@ case class Universe(
       player: Player
   ): Either[Failure, (Universe, IO[Nothing, Option[Action]])] = {
     def executeLinking(
-        modifiedGame: BackendGame[?, ?, ?]
+        gameToModify: BackendGame[?, ?, ?]
     ): Either[Failure, Universe] = {
       val playerId = linkRoleToPlayer.playerId
       val role = linkRoleToPlayer.role
@@ -294,20 +294,26 @@ case class Universe(
       if (tokenAndTarget.isEmpty) {
         Left(GeneralFailure("No player with such id."))
       } else {
-        val isRoleAlreadyTaken: Boolean =
-          players.values.exists(_.role.contains(role))
+        val (token, target) = tokenAndTarget.get
+        val gameWithoutPreviousRole = target.role match {
+          case Some(previousRole) =>
+            gameToModify.unRegisterRoleByIdIfNeeded(previousRole)
+          case None => gameToModify
+        }
+        val isRoleAlreadyTaken: Boolean = players.values.exists(player =>
+          player.id != playerId && player.role.contains(role)
+        )
         if (isRoleAlreadyTaken) {
           Left(GeneralFailure("Role [" + role + "] is already taken."))
         } else {
-          val (token, target) = tokenAndTarget.get
-          val updatedTarget = target.copy(role = Some(role))
-          val newPlayers = players.updated(token, updatedTarget)
-          Right(
+          gameWithoutPreviousRole.registerRoleById(role).map { modifiedGame =>
+            val updatedTarget = target.copy(role = Some(role))
+            val newPlayers = players.updated(token, updatedTarget)
             this.copy(
               players = newPlayers,
               game = Some(modifiedGame)
             )
-          )
+          }
         }
       }
     }
@@ -328,11 +334,7 @@ case class Universe(
               s"Role with id [${linkRoleToPlayer.role}] does not exist."
             )
           case Some(role) =>
-            backendGame.registerRoleById(linkRoleToPlayer.role) match {
-              case Left(failure)       => Left(failure)
-              case Right(modifiedGame) =>
-                executeLinking(modifiedGame).map(u => (u, ZIO.none))
-            }
+            executeLinking(backendGame).map(u => (u, ZIO.none))
         }
       }
     } else {
