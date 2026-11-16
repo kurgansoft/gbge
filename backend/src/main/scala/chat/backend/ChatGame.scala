@@ -13,7 +13,7 @@ case class ChatGame(
     override val activeRoles: Set[Speaker] = Set.empty
 ) extends AbstractChatGame(messages, activeRoles)
     with BackendGame[Speaker, ChatAction, ClientChatGame] {
-  override val state: GameState = IN_PROGRESS
+  override lazy val state: GameState = IN_PROGRESS
 
   override val noOfPlayers: Int = 6
 

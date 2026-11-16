@@ -8,7 +8,7 @@ abstract class AbstractChatGame(
     override val activeRoles: Set[Speaker]
 ) extends Game[Speaker, ChatAction] {
 
-  override val state: GameState = IN_PROGRESS
+  override lazy val state: GameState = IN_PROGRESS
 
   override val minPlayerNumber: Int = 1
   override val maxPlayerNumber: Int = 6
