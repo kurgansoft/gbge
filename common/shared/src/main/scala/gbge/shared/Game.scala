@@ -3,7 +3,7 @@ package gbge.shared
 import gbge.shared.actions.GameAction
 
 trait Game[GR <: GameRole, GA <: GameAction] {
-  val state: GameState
+  lazy val state: GameState
 
   val minPlayerNumber: Int
   val maxPlayerNumber: Int
