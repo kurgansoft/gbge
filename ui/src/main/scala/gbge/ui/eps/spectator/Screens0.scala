@@ -1,8 +1,10 @@
 package gbge.ui.eps.spectator
 
+import gbge.client.events_and_effects.Connect
 import gbge.shared.{FrontendPlayer, FrontendUniverse}
 import gbge.ui.display.Directives
-import gbge.ui.eps.ConnectionStatus._
+import gbge.ui.eps.ConnectionStatus.*
+import japgolly.scalajs.react.Callback
 import japgolly.scalajs.react.vdom.TagOf
 import japgolly.scalajs.react.vdom.all.*
 import org.scalajs.dom.html.Div
@@ -17,10 +19,22 @@ object Screens0 {
     implicit val players: List[FrontendPlayer] =
       state.frontendUniverse.map(_.players.toList).orNull
 
-    state.sseStreamStatus match {
+    state.connectionState.status match {
       case NOT_YET_ESTABLISHED =>
         div(h1("Connection is NOT YET ESTABLISHED", color := "yellow"))
-      case BROKEN    => div(h1("Connection is BROKEN", color := "yellow"))
+      case BROKEN =>
+        div(
+          h1("Connection is BROKEN", color := "yellow"),
+          button(
+            `class` := "btn btn-primary",
+            "RECONNECT",
+            onClick --> Callback {
+              eventHandler(
+                Connect(Some("MANUAL RECONNECT"))
+              )
+            }
+          )
+        )
       case CONNECTED =>
         if (state.frontendUniverse.flatMap(_.game).isEmpty) {
           if (state.frontendUniverse.isDefined)

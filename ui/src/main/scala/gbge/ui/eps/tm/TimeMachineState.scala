@@ -170,7 +170,7 @@ case class TimeMachineState(
           this.copy(status = LOADING_FAILED)
         case TMStateArrived(number, SpectatorPerspective, fu) =>
           val spectatorState: SpectatorState =
-            SpectatorState(sseStreamStatus = CONNECTED)
+            SpectatorState(connectionState = ConnectionState(CONNECTED))
               .processEvent(NewFU(fu))
               ._1
           this.copy(selectedClientState = CSState_Loaded(spectatorState))

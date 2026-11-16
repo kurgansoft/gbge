@@ -42,14 +42,14 @@ object Displayer {
               case Some(
                     SpectatorState(
                       frontendUniverse,
-                      connectionStatus,
+                      connectionState,
                       offlineState
                     )
                   ) =>
                 Screens0.root(
                   SpectatorState(
                     frontendUniverse,
-                    connectionStatus,
+                    connectionState,
                     offlineState
                   ),
                   spectatorBridge
@@ -85,14 +85,14 @@ object Displayer {
             case Some(
                   SpectatorState(
                     frontendUniverse,
-                    wsConnectionStatus,
+                    connectionState,
                     offlineState
                   )
                 ) =>
               Screens0.root(
                 SpectatorState(
                   frontendUniverse,
-                  wsConnectionStatus,
+                  connectionState,
                   offlineState
                 ),
                 spectatorBridge

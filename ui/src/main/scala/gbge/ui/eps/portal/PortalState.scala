@@ -55,8 +55,7 @@ case class PortalState(
         perspective match {
           case SpectatorPerspective =>
             val tempState = SpectatorState(
-              frontendUniverse = Some(frontendUniverse),
-              sseStreamStatus = CONNECTED
+              frontendUniverse = Some(frontendUniverse)
             ).processEvent(NewFU(frontendUniverse))._1
 //            this.copy(clientState = Some(tempState), generalPortalClientState = EverythingIsSelected)
             this.copy(

@@ -45,7 +45,7 @@ trait EntryPoint {
       }
 
     val loop = EventLoop
-      .createLoop(state, renderFunction, List(Connect()))
+      .createLoop(state, renderFunction, List(SetupEventListeners, Connect()))
       .provideEnvironment(ZEnvironment(Clock.ClockLive))
 
     Future {
