@@ -33,14 +33,18 @@ case class MainServiceLive(
   } yield JoinResponse(playerId, token)
 
   override def handleAction(action: Action, userId: Int): IO[Failure, Unit] =
-    for {
-      pair <- stateManager.update(action, Some(userId))
-      (_, effect) = pair
-      actionMaybe <- effect.provideEnvironment(ZEnvironment(tokenGenerator))
-      _ <- ZIO.when(actionMaybe.isDefined)(
-        stateManager.update(actionMaybe.get, Some(userId))
-      )
-    } yield ()
+    def process(currentAction: Action): IO[Failure, Unit] =
+      for {
+        pair <- stateManager.update(currentAction, Some(userId))
+        (_, effect) = pair
+        nextAction <- effect.provideEnvironment(ZEnvironment(tokenGenerator))
+        _ <- nextAction match {
+          case Some(action) => process(action)
+          case None         => ZIO.unit
+        }
+      } yield ()
+
+    process(action)
 }
 
 object MainServiceLive {
